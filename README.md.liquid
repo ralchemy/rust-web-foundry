@@ -1,0 +1,64 @@
+# {{ project-name }}
+
+Runnable Axum reference service generated from the Rust Web Foundry Project Template.
+
+The generated service intentionally includes a canonical Task vertical slice. It demonstrates
+Clean Architecture boundaries, persistence, outbound Ports, HTTP contracts, observability, and
+process lifecycle. Task is a reference slice, not a universal task-management domain model.
+
+## Prerequisites
+
+- Rustup
+- Docker with Compose v2
+- curl
+- cargo-generate `>=0.23.14, <0.24.0`
+- Just `>=1.58.0, <2.0.0`
+- sqlx-cli `>=0.9.0, <0.10.0`
+
+```sh
+rustup update stable
+cargo install cargo-generate --version 0.23.14 --locked
+cargo install just --version 1.58.0 --locked
+cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,mysql
+```
+
+## Verify the generated service
+
+```sh
+just verify
+```
+
+For direct operation, copy `.env.example` to `.env`, then run migrations and the server separately:
+
+```sh
+cargo run -p {{ project-name }} -- migrate
+cargo run -p {{ project-name }} -- serve
+```
+
+The server never runs migrations. Configuration and lifecycle details are in [the Guide](docs/guide/README.md).
+
+## Architecture
+
+```text
+http ────────────┐
+                 ├──> application ───> domain
+infrastructure ──┘
+
+app ──> http + infrastructure + application + domain
+```
+
+See [architecture](docs/guide/architecture/README.md), [project structure](docs/guide/architecture/project-structure.md), and the [Task flow](docs/guide/task-flow.md).
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `just infra-up` / `just infra-down` | Start or stop local MySQL |
+| `just policy-stub` | Run the local TaskPolicy example |
+| `just migrate` | Apply embedded migrations explicitly |
+| `just sqlx-prepare` | Apply development migrations and refresh `.sqlx` query metadata |
+| `just serve` | Start the production server path |
+| `just test` | Run every workspace test against an existing MySQL |
+| `just check` | Run format, Clippy, and DB-free tests |
+| `just ci` | Run checks, MySQL integration, query verification, and live smoke against an existing MySQL |
+| `just verify` | Start MySQL and prove the fresh service end to end |

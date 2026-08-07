@@ -1,0 +1,20 @@
+[package]
+name = "{{ project-name }}-http"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+application.workspace = true
+axum.workspace = true
+axum-valid.workspace = true
+domain.workspace = true
+fastrace.workspace = true
+fastrace-axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+validator.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
+tokio.workspace = true
+tower.workspace = true

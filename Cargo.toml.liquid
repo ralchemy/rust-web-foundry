@@ -1,0 +1,41 @@
+[workspace]
+members = ["app", "crates/domain", "crates/application", "crates/http", "crates/infrastructure"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+anyhow = "1.0.104"
+application = { package = "{{ project-name }}-application", path = "crates/application" }
+domain = { package = "{{ project-name }}-domain", path = "crates/domain" }
+http = { package = "{{ project-name }}-http", path = "crates/http" }
+infrastructure = { package = "{{ project-name }}-infrastructure", path = "crates/infrastructure" }
+axum = { version = "0.8.9", features = ["macros"] }
+axum-valid = { version = "0.25.0", default-features = false, features = ["form", "json", "query", "validator"] }
+chrono = { version = "0.4.45", features = ["serde"] }
+config = { version = "0.15.25", default-features = false }
+dotenvy = "0.15.7"
+fastrace = { version = "0.7.19", features = ["enable"] }
+fastrace-axum = "0.2.0"
+fastrace-opentelemetry = "0.18.1"
+fastrace-reqwest = "0.3.0"
+futures = "0.3.33"
+http-body-util = "0.1.4"
+log = "0.4.33"
+logforth = { version = "0.30.1", default-features = false, features = ["bridge-log", "diagnostic-fastrace", "filter-rustlog", "layout-json", "layout-text"] }
+opentelemetry = { version = "0.32.0", default-features = false, features = ["trace"] }
+opentelemetry-otlp = { version = "0.32.0", default-features = false, features = ["grpc-tonic", "tls-ring", "tls-webpki-roots", "trace"] }
+opentelemetry_sdk = { version = "0.32.0", default-features = false, features = ["trace"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "rustls"] }
+secrecy = { version = "0.10.3", features = ["serde"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sqlx = { version = "0.9.0", default-features = false, features = ["macros", "migrate", "mysql", "runtime-tokio", "tls-rustls-ring-webpki"] }
+thiserror = "2.0.19"
+tokio = { version = "1.53.1", features = ["full"] }
+tokio-util = { version = "0.7.19", features = ["full"] }
+tower = { version = "0.5.3", features = ["util"] }
+ulid = "3.0.0"
+validator = { version = "0.20.0", features = ["derive"] }

@@ -1,0 +1,36 @@
+[package]
+name = "{{ project-name }}"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "app"
+
+[[example]]
+name = "task-policy-stub"
+path = "examples/task_policy_stub.rs"
+
+[dependencies]
+application.workspace = true
+axum.workspace = true
+config.workspace = true
+domain.workspace = true
+dotenvy.workspace = true
+fastrace.workspace = true
+fastrace-opentelemetry.workspace = true
+http.workspace = true
+infrastructure.workspace = true
+log.workspace = true
+logforth.workspace = true
+opentelemetry.workspace = true
+opentelemetry-otlp.workspace = true
+opentelemetry_sdk.workspace = true
+secrecy.workspace = true
+serde.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
+serde_json.workspace = true
+tower.workspace = true

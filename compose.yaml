@@ -1,0 +1,20 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: app
+      MYSQL_PASSWORD: app
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: app
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uapp", "-papp"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+volumes:
+  mysql-data:

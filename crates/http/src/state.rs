@@ -1,0 +1,47 @@
+use application::{CreateTask, ReadinessProbe, TaskPolicy, TaskRepository};
+use axum::extract::FromRef;
+
+#[derive(Clone)]
+pub(crate) struct HttpState<P, R, H> {
+    task: TaskState<P, R>,
+    health: HealthState<H>,
+}
+
+#[derive(Clone)]
+pub(crate) struct TaskState<P, R>(pub(crate) CreateTask<P, R>);
+
+#[derive(Clone)]
+pub(crate) struct HealthState<H>(pub(crate) H);
+
+impl<P, R, H> HttpState<P, R, H>
+where
+    P: TaskPolicy,
+    R: TaskRepository,
+    H: ReadinessProbe,
+{
+    pub(crate) fn new(create_task: CreateTask<P, R>, readiness: H) -> Self {
+        Self {
+            task: TaskState(create_task),
+            health: HealthState(readiness),
+        }
+    }
+}
+
+impl<P, R, H> FromRef<HttpState<P, R, H>> for TaskState<P, R>
+where
+    P: TaskPolicy,
+    R: TaskRepository,
+{
+    fn from_ref(state: &HttpState<P, R, H>) -> Self {
+        state.task.clone()
+    }
+}
+
+impl<P, R, H> FromRef<HttpState<P, R, H>> for HealthState<H>
+where
+    H: ReadinessProbe,
+{
+    fn from_ref(state: &HttpState<P, R, H>) -> Self {
+        state.health.clone()
+    }
+}
