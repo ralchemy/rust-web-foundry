@@ -13,7 +13,13 @@ Read `docs/guide/observability.md` before changing request trace extraction, spa
 - Use `State` for startup-injected capabilities and request extensions only for values derived from the current request. Construct neither inside a handler.
 - Keep handlers thin: extract, call the narrowest existing inward owner, and translate the result. Use an Application use case or Port for orchestration or business decisions; call a Domain constructor directly only for a pure invariant operation that needs no Application capability.
 - Keep business routes under `/api/v1` and health routes at `/health/live` and `/health/ready`; do not propagate HTTP versions inward.
+- Split HTTP modules by public interaction or route family, not mechanically by every route. Use the same workflow vocabulary across routes, handlers, DTOs, tests, and documentation without requiring identical directory trees.
+- When a route or handler file owns multiple independently testable interactions, promote it to a directory module and move each complete interaction or coherent route group into a private child module.
+- Keep `routes/mod.rs` focused on composing route-family Routers. Route declarations and route-specific state belong to the owning route-family module.
+- An extracted handler module owns request extraction, boundary conversion, the Application call, response conversion, and focused public-path tests. Keep a trivial forwarding handler local instead of creating a one-function directory.
 - Default JSON request DTOs to rejecting unknown fields, and preserve the Router's 8 KiB limit for bounded body extractors. Declare and test any route-specific exception.
+- Keep transport primitives in private DTOs. Convert them once into Domain or Application types before calling inward, and serialize typed results once on the way out.
+- Business endpoints return named response DTOs. Do not assemble public contracts with `serde_json::Value`, `json!`, maps, or anonymous tuples.
 - Keep transport validation in HTTP, but never duplicate or replace a Domain invariant there. Construct Domain values through their validating constructor before calling external capabilities.
 - Use Axum extractors directly and add `axum_valid::Valid` for transport DTO validation. Convert their rejections through `ApiError`; do not create a local generic extractor wrapper.
 - Translate validation failures through `ApiError`; never expose library error objects, messages, parameters, or rejected values. Adding field errors changes the public API contract.

@@ -10,6 +10,13 @@ Read `docs/guide/reference/outbound-http.md` before changing client construction
 - Use MySQL 8.4 syntax, bound parameters, SQLx checked query macros, and embedded forward migrations.
 - Name migrations `YYYYMMDDNNN_information.sql`, for example `20260806001_drop-task-id-index.sql`. The date and three-digit daily sequence form SQLx's integer version; the underscore is required by SQLx.
 - Commit refreshed `.sqlx` metadata with every query or schema change. Use `query!` for statements and `query_as!` when a returned row has an adapter-owned type.
+- Keep database rows and downstream wire DTOs private to their adapter. Convert raw IDs, states, capabilities, timestamps, quantities, and validated values into Domain or Application types before returning through a Port.
+- Use runtime query construction only when the query shape is genuinely dynamic. Record the reason beside the construction and test its parameterization and result mapping.
+- Split Infrastructure modules by implemented Port, transaction or consistency responsibility, or external system; do not mirror every Application command mechanically.
+- An extracted adapter module owns its complete SQL or HTTP interaction, private row or wire types, conversion, error classification, and focused tests.
+- Keep an adapter `mod.rs` focused on private module declarations, selective exports, and construction. Do not leave SQL, wire mapping, or workflow behavior in it.
+- Do not hide an oversized Port implementation behind helper modules. Narrow the Port at its Application owner first, then implement each coherent Port in its owning adapter module.
+- Give shared row or wire types their own module only when multiple adapter operations genuinely share the same representation.
 - Do not use startup migrations, `INSERT IGNORE`, upserts, or transactions for the one-write Task flow.
 - Reuse one redirect-disabled reqwest client with a finite timeout and no retry.
 - Classify concrete failures here, log only safe categories, and return stable Port errors inward.

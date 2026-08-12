@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Domain Model"
+  short_description: "Define invariants, business types, and aggregate behavior"
+  default_prompt: "Use $ddd-tactical-design to model the invariants and types for this behavior."
