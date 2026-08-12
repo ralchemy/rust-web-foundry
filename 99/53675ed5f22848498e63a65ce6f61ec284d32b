@@ -1,0 +1,83 @@
+.agents/skills/ddd-model-review/agents/openai.yaml
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-3
+  s_ffc39b9ea9c547::t_e63af7f61ab4d1 4
+postmortem/2026-08-11-promote-stable-workflows-to-directory-modules.md
+  s_ffc39b9ea9c547::t_04e345f6746376 1-17
+.agents/skills/ddd-strategic-design/SKILL.md
+  s_ffc39b9ea9c547::t_386a03204d9986 3,6,8,11-14,17,19-23,25
+  s_ffc39b9ea9c547::t_207a4c57ec8396 10,15
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-2,4-5,7,9,16,18,24
+docs/agents/domain.md
+  s_ffc39b9ea9c547::t_cddcf90b42679b 1-8,11-22,24-30,34-36,52-58,64-70,84-96
+  s_ffc39b9ea9c547::t_207a4c57ec8396 9,31-33,37-51,60-61,63,76-77,81
+  s_ffc39b9ea9c547::t_79870f23254ff7 10,71-75,78-80,83
+  s_ffc39b9ea9c547::t_7d911aa34adf23 23
+  s_ffc39b9ea9c547::t_9c6fbd875b0160 59,62
+  s_ffc39b9ea9c547::t_ffa98455e85b88 82
+crates/http/AGENTS.md
+  s_ffc39b9ea9c547::t_382ed763ee68a4 21-22
+  s_ffc39b9ea9c547::t_6f9f8419170aca 16-19
+.agents/skills/ddd-strategic-design/agents/openai.yaml
+  s_ffc39b9ea9c547::t_e63af7f61ab4d1 4
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-3
+crates/domain/AGENTS.md
+  s_ffc39b9ea9c547::t_6f9f8419170aca 14-15
+  s_ffc39b9ea9c547::t_382ed763ee68a4 11-12
+.agents/skills/ddd-tactical-design/SKILL.md
+  s_ffc39b9ea9c547::t_acb8c6adb25e03 12,16-17
+  s_ffc39b9ea9c547::t_386a03204d9986 3,6,8,11,13-15,21,23-27,29
+  s_ffc39b9ea9c547::t_207a4c57ec8396 10,18-19
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-2,4-5,7,9,20,22,28
+crates/infrastructure/AGENTS.md
+  s_ffc39b9ea9c547::t_6f9f8419170aca 15-19
+  s_ffc39b9ea9c547::t_382ed763ee68a4 13-14
+.agents/skills/ddd-model-review/SKILL.md
+  s_ffc39b9ea9c547::t_acb8c6adb25e03 12
+  s_ffc39b9ea9c547::t_207a4c57ec8396 10,15-16
+  s_ffc39b9ea9c547::t_386a03204d9986 3,6,8,11,13-14,18,20-22,24,26
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-2,4-5,7,9,17,19,23,25
+crates/application/AGENTS.md
+  s_ffc39b9ea9c547::t_382ed763ee68a4 8-11
+  s_ffc39b9ea9c547::t_6f9f8419170aca 12-13
+  s_ffc39b9ea9c547::t_1a206c880874a6 7
+docs/guide/architecture/project-structure.md
+  s_ffc39b9ea9c547::t_04e345f6746376 40-64
+.agents/skills/ddd-tactical-design/agents/openai.yaml
+  s_ffc39b9ea9c547::t_e63af7f61ab4d1 4
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-3
+AGENTS.md
+  s_ffc39b9ea9c547::t_05bc9cccb28abd 103
+  s_ffc39b9ea9c547::t_382ed763ee68a4 69-74,76-83,87-99,112-122
+  s_ffc39b9ea9c547::t_1a206c880874a6 75,84-86
+  s_ffc39b9ea9c547::t_6f9f8419170aca 100-102,104-109
+  s_ffc39b9ea9c547::t_cddcf90b42679b 54-64,67-68
+  s_ffc39b9ea9c547::t_207a4c57ec8396 65-66
+postmortem/2026-08-12-conditionally-require-domain-modeling.md
+  s_ffc39b9ea9c547::t_cddcf90b42679b 1-12,15-21
+  s_ffc39b9ea9c547::t_207a4c57ec8396 13-14
+.gitignore
+  s_ffc39b9ea9c547::t_1f6f3a483c633e 7-8
+.agents/skills/ddd-discover/agents/openai.yaml
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-3
+  s_ffc39b9ea9c547::t_e63af7f61ab4d1 4
+.agents/skills/ddd-discover/SKILL.md
+  s_ffc39b9ea9c547::t_386a03204d9986 3,6,8,11-15,17,19-23
+  s_ffc39b9ea9c547::t_207a4c57ec8396 10,25
+  s_ffc39b9ea9c547::t_c765a0f679eec0 1-2,4-5,7,9,16,18,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9953675ed5f22848498e63a65ce6f61ec284d32b",
+  "prompts": {},
+  "sessions": {
+    "s_ffc39b9ea9c547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019feeb1-2003-7b71-a093-9230126eebff",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    }
+  }
+}
