@@ -20,7 +20,7 @@ Do not create a Port for every adapter or struct. Add one when a use case curren
 
 Prefer an Entity or Value Object method when a rule belongs to one concept. When a pure business rule spans several Domain concepts and has no I/O, Port, runtime, or orchestration responsibility, it may become a Domain Service under `crates/domain/src/services/`.
 
-An Application use case coordinates Domain behavior and external capabilities. `CreateTask`, for example, parses a `TaskTitle`, calls the Task Policy Port, creates a `Task`, and persists it through the Task Repository Port. It belongs to Application because orchestration crosses external boundaries; moving it into a Domain Service would make Domain own I/O contracts.
+An Application use case coordinates Domain behavior and external capabilities. `CreateTask`, for example, accepts a valid `TaskTitle`, calls the Task Policy Port, creates a `Task`, and persists it through the Task Repository Port. It belongs to Application because orchestration crosses external boundaries; moving it into a Domain Service would make Domain own I/O contracts.
 
 Do not pre-create a Domain Service directory. Add it only with the first real cross-concept Domain rule.
 

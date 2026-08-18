@@ -21,7 +21,7 @@ Security behavior stays with the layer that owns the relevant trust decision. Th
 
 JSON handlers registered under the installed Router inherit its 8 KiB `DefaultBodyLimit` when they use Axum's bounded body extractors. Each request DTO independently defines whether unknown fields are accepted. Direct `Body` consumption or a future streaming endpoint must define and test its own limit. See [Validation](http/validation.md) and Axum's [`DefaultBodyLimit` contract](https://docs.rs/axum/0.8.9/axum/extract/struct.DefaultBodyLimit.html).
 
-Successful JSON decoding produces an HTTP DTO, not trusted Domain state. In the canonical CreateTask flow, Application constructs `TaskTitle` through its validating Domain constructor before calling TaskPolicy or MySQL. Transport validation and Domain invariants do not authenticate a caller or authorize an operation.
+Successful JSON decoding produces an HTTP DTO, not trusted Domain state. In the canonical CreateTask flow, HTTP constructs `TaskTitle` through its validating Domain constructor before Application can call TaskPolicy or MySQL. Transport validation and Domain invariants do not authenticate a caller or authorize an operation.
 
 [`ApiError`](../../crates/http/src/errors/mod.rs) is the only public error authority. Dependency messages, configuration, SQL, paths, stack traces, rejected values, and raw validation details never become response text. See [Error handling](architecture/error-handling.md).
 

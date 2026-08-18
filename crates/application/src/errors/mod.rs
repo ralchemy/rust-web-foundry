@@ -12,7 +12,6 @@ pub struct ReadinessError;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CreateTaskError {
-    InvalidTitle,
     PolicyRejected,
     PolicyUnavailable,
     PolicyBadResponse,

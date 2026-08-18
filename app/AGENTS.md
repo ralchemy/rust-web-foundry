@@ -13,5 +13,6 @@ Read `docs/guide/runtime.md` before changing migration/serve dispatch, startup o
 - Keep database URLs in `SecretString` until the concrete connection boundary and never log them.
 - Connect to MySQL before binding HTTP; do not add startup retries.
 - Construct configured use cases and adapters once in `build`. Keep process-lifecycle resources such as the pool in `BuiltService` rather than HTTP state so ordered shutdown retains ownership.
+- When configuration selects a composition profile or adapter, `build` installs that actual implementation and the production-composition test proves the selection. If a configured production capability is unavailable, fail startup instead of silently substituting a controlled or test adapter.
 - On shutdown, stop accepts, bound request draining, close the pool, then flush fastrace. A drain timeout is an error.
 - Build the same installed Router for production and the cross-crate integration test; do not create a second test composition path or state bag.

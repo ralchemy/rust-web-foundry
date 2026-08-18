@@ -6,15 +6,15 @@ The Task creation path demonstrates the boundary:
 
 ```text
 HTTP CreateTaskRequest { title: String }
-    ↓
-application::CreateTask::execute(String)
     ↓ TaskTitle::parse
 domain::TaskTitle
+    ↓
+application::CreateTask::execute(TaskTitle)
     ↓ Task::new
 domain::Task
 ```
 
-Application invokes `TaskTitle::parse`, so every inbound adapter that uses the same use case shares the Domain invariant. HTTP validation may reject malformed transport input earlier, but it does not replace Domain construction. See [Validation boundaries](../http/validation.md) for the distinction between transport checks, Domain invariants, and Application decisions.
+Each inbound adapter invokes `TaskTitle::parse` at its trust boundary and passes only the resulting Domain value into Application. The Domain constructor remains the single invariant authority; adapter ownership determines where raw transport data is converted. See [Validation boundaries](../http/validation.md) for the distinction between transport checks, Domain invariants, and Application decisions.
 
 ## Prefer domain types over primitives
 
@@ -37,7 +37,7 @@ Domain types do not derive Serde merely for HTTP, database, or message convenien
 Use boundary-owned DTOs instead:
 
 ```text
-HTTP DTO → Application input → Domain constructor
+HTTP DTO → Domain constructor → Application use case
 Domain value → explicit HTTP response mapping
 ```
 
@@ -45,7 +45,7 @@ If a future project determines that serialization is itself a Domain-owned contr
 
 ## Application inputs are not Domain requests
 
-`CreateTaskRequest` is an HTTP DTO because it describes JSON accepted by one inbound adapter. `CreateTask::execute` currently accepts its single raw title directly, avoiding a one-field wrapper while centralizing Domain parsing in the use case.
+`CreateTaskRequest` is an HTTP DTO because it describes JSON accepted by one inbound adapter. `CreateTask::execute` accepts the single `TaskTitle` directly; a one-field Application wrapper would add no distinct meaning, while a primitive would discard the established invariant.
 
 When a use case gains several meaningful inputs or multiple inbound adapters need the same operation shape, define an Application-owned `Command`, `Input`, or `Params` type. Do not put a transport-named `Request` in Domain. Domain constructors accept Domain values and express business creation, not how an operation arrived.
 

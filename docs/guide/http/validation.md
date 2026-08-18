@@ -5,7 +5,7 @@ Validation is not one operation owned by one layer. The generated service separa
 | Boundary | Question | Owner | CreateTask example |
 |---|---|---|---|
 | Transport structure | Can this request be decoded according to the HTTP contract? | HTTP | content type, JSON syntax and types, unknown fields, and body size |
-| Domain invariant | Can this raw value become a valid Domain value? | Domain | Application invokes `TaskTitle::parse`, which trims and rejects empty, overlong, or control-character input |
+| Domain invariant | Can this raw value become a valid Domain value? | Domain | HTTP invokes `TaskTitle::parse`, which trims and rejects empty, overlong, or control-character input before calling Application |
 | Business decision | Is this valid value acceptable for the current operation? | Application orchestrating a Port | `TaskPolicy::is_allowed` |
 | Persistence integrity | Can invalid or conflicting data be committed? | Infrastructure and the database | column types, length, keys, and checked bound SQL |
 
@@ -17,15 +17,15 @@ Client-side validation may improve feedback, but it is never a trust boundary. E
 HTTP bytes and headers
     → Result<Json<CreateTaskRequest>, JsonRejection>
     → CreateTaskRequest { title: String }
-    → CreateTask::execute(String)
     → TaskTitle::parse
+    → CreateTask::execute(TaskTitle)
     → TaskPolicy::is_allowed(&TaskTitle)
     → TaskRepository::insert(&Task)
 ```
 
 The CreateTask handler uses Axum `Json` directly and converts `JsonRejection` through [`ApiError`](../../../crates/http/src/errors/mod.rs). `CreateTaskRequest` uses `serde(deny_unknown_fields)`, and its bounded extractor inherits the installed Router's 8 KiB limit. Each future request DTO owns its unknown-field contract, and each body consumer must confirm whether the shared limit applies. These checks answer whether the wire representation is acceptable; they do not establish a Domain invariant.
 
-[`CreateTask`](../../../crates/application/src/use_cases/create_task.rs) constructs [`TaskTitle`](../../../crates/domain/src/value_objects/task_title.rs) before invoking either Port. That placement gives every inbound adapter using the use case the same normalization and invariant, and an invalid title cannot reach the external Policy or MySQL.
+The HTTP handler constructs [`TaskTitle`](../../../crates/domain/src/value_objects/task_title.rs) before invoking [`CreateTask`](../../../crates/application/src/use_cases/create_task.rs). Every inbound adapter must perform the same explicit Domain construction at its own trust boundary, while the use case and its Ports accept only the valid type. An invalid title cannot enter Application, reach the external Policy, or reach MySQL.
 
 `TaskPolicy` is deliberately not called validation. It is an external business capability whose answer may depend on current state and may be unavailable. A structurally valid title can therefore be rejected by Policy without becoming an invalid `TaskTitle`.
 
@@ -104,7 +104,7 @@ See [Error handling](../architecture/error-handling.md) for cross-layer failure 
 ## Verify the owning boundary
 
 - Domain tests prove normalization, invariant boundaries, and valid construction beside the owning type.
-- Application tests prove Domain construction happens before Policy and persistence, and that every failure short-circuits later calls.
+- Application tests prove typed Domain input reaches Policy before persistence and that every Application failure short-circuits later calls.
 - HTTP tests send real JSON, query, or form requests through the installed Router and assert the exact status and public envelope.
 - Migration and Infrastructure checks prove database constraints and checked parameter binding without treating persistence as the first validation layer.
 

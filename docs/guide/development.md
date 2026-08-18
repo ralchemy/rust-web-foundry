@@ -26,23 +26,25 @@ Generated CI runs `just ci` with MySQL 8.4 on the latest stable Rust selected by
 Authority is intentionally split:
 
 - compiler, manifests, tests, Just, and CI enforce executable facts;
-- `AGENTS.md` files enforce durable ownership and safety rules;
-- `.agents/skills/` provides optional procedures for recurring changes;
+- `AGENTS.md` files enforce durable ownership and safety rules and override optional agent-framework, extension, and Skill style defaults for repository work;
+- `.agents/skills/` provides optional, agent-supported procedures for recurring changes;
 - this Guide explains rationale and extension points.
 
 When behavior changes, update code/tests and user documentation together. Do not copy a rule into a Skill or turn optional Guide advice into an always-on requirement.
 
 ## AI-assisted workflow
 
-Give an agent the smallest authoritative context for the change:
+Give an agent the smallest authoritative context for the change, independent of its orchestration framework:
 
-1. read root and touched-crate `AGENTS.md` files plus `CONTEXT.md`;
+1. read root and the nearest `AGENTS.md` for every touched path plus `CONTEXT.md`; do not assume descendant rules were loaded automatically;
 2. trace the existing public path and read its Baseline chapter;
 3. follow a trigger into Development Reference only when the change creates that concern;
-4. use a Skill when the work matches one of the three recurring procedures;
-5. implement the smallest coherent vertical slice, run the owning check, then read the full diff.
+4. use a repository Skill when the active agent supports it and the work matches; otherwise follow the same documented outcome directly;
+5. implement the smallest coherent buildable slice and run the owning check; produce the evidence-backed rule-conformance review once at handoff.
 
-Do not paste the entire Guide into a prompt or copy its explanations into Project Rules. When an agent repeats a mistake, place the correction with its single owner: executable behavior in code/tests, a universal constraint in the applicable `AGENTS.md`, a repeated procedure in a Skill, or conditional rationale in Reference. This keeps future context precise without turning one conversation into hidden project policy.
+For a confirmed multi-task design, follow dependencies while grouping interface-coupled tasks into the smallest buildable slice. Run focused checks at stable boundaries and the complete required checks at handoff. Continue automatically; ask the user only for a material unresolved business decision, missing authority, or external access that blocks all remaining independent work.
+
+Do not paste the entire Guide into a prompt or copy its explanations into Project Rules. When an agent repeats a mistake, place the correction with its single owner: executable behavior in code/tests, a universal constraint in the applicable `AGENTS.md`, an optional repeated procedure in a Skill, or conditional rationale in Reference. No mandatory rule may live only in a framework-specific prompt or Skill, and a framework's completion signal is not evidence that Project Rules passed. This keeps future context precise without turning one conversation into hidden project policy.
 
 ## Dependency selection
 

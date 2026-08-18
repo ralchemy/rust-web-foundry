@@ -23,7 +23,6 @@ pub(crate) enum ApiError {
 impl From<CreateTaskError> for ApiError {
     fn from(error: CreateTaskError) -> Self {
         match error {
-            CreateTaskError::InvalidTitle => Self::TaskTitleInvalid,
             CreateTaskError::PolicyRejected => Self::TaskPolicyRejected,
             CreateTaskError::PolicyUnavailable => Self::TaskPolicyUnavailable,
             CreateTaskError::PolicyBadResponse => Self::TaskPolicyBadResponse,

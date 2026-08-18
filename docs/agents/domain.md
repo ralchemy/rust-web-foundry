@@ -13,20 +13,24 @@ If any of these files don't exist, **proceed silently**. Don't scaffold them upf
 
 ## Choose the smallest Domain workflow
 
-| Change | Required Skill |
-| --- | --- |
-| New capability or unclear actors, terminology, events, rules, or scope | `ddd-discover` |
-| Bounded context, semantic ownership, or cross-context translation change | `ddd-strategic-design` |
-| Aggregate, invariant, state transition, Domain Service, Domain Event, or business type change | `ddd-tactical-design` |
-| Substantial Domain model or implementation reaches completion | `ddd-model-review` |
+| Change | Required outcome | Optional Skill |
+| --- | --- | --- |
+| New capability or unclear actors, terminology, events, rules, or scope | Confirm the capability's actors, language, commands, facts, rules, scope, and exceptions before implementation | `ddd-discover` |
+| Bounded context, semantic ownership, or cross-context translation change | Establish the owner, relationship, published facts, and translation boundary before implementation | `ddd-strategic-design` |
+| Aggregate, invariant, state transition, Domain Service, Domain Event, or business type change | Define behavior ownership, legal states, invariants, transitions, events, and type candidates before implementation | `ddd-tactical-design` |
+| Substantial Domain model or implementation reaches handoff | Review language, ownership, invariants, state safety, type completeness, boundary leakage, and meaningful acceptance evidence | `ddd-model-review` |
 
-Skills compose only when the change needs them. A new, unclear capability may require discovery followed by tactical design; changing one confirmed invariant normally requires only tactical design, with model review added when the resulting model or implementation is substantial. Adapter-only or Infrastructure-only work that preserves business meaning needs neither.
+These outcomes compose only when the change needs them. A new, unclear capability may require discovery followed by tactical design; changing one confirmed invariant normally requires only tactical design, with model review added when the resulting model or implementation is substantial. Adapter-only or Infrastructure-only work that preserves business meaning needs neither.
+
+An agent with repository Skill support should use the matching `ddd-*` Skill as the procedure. An agent without Skill support must perform the same workflow directly from this document and the authoritative Domain artifacts. Skills are optional execution aids; the outcomes and evidence are not optional.
+
+Complete the selected pre-implementation workflow and record its result in the active issue or plan before writing the production implementation. A focused failing test or isolated throwaway spike may precede it only to resolve a named uncertainty; remove or replace that code once the uncertainty is resolved. Writing a capability document or running model review after the implementation is chosen cannot substitute for this ordering.
 
 ## Keep authority explicit
 
-DDD Skills decide business language, semantic ownership, invariants, behaviors, and type candidates. They do not decide crate layout, dependency direction, Port shape, persistence, HTTP contracts, retries, caches, Outbox usage, or deployment. Root and crate `AGENTS.md` files own those engineering decisions.
+DDD workflow outputs decide business language, semantic ownership, invariants, behaviors, and type candidates. They do not decide crate layout, dependency direction, Port shape, persistence, HTTP contracts, retries, caches, Outbox usage, or deployment. Root and crate `AGENTS.md` files own those engineering decisions.
 
-Record working facts, assumptions, open questions, and the design checkpoint in the active issue or plan. Promote only confirmed, durable knowledge:
+Record working facts, assumptions, open questions, the selected Domain workflow evidence, and the design checkpoint in the active issue or plan. For every material fact marked confirmed, record whether it came from the user's request or an authoritative Domain artifact; a plausible inference has no authority. Record each command's fields and rules separately rather than inheriting them from a nearby operation. Promote only confirmed, durable knowledge:
 
 - Put confirmed terms and meanings in the relevant `CONTEXT.md`; keep it a glossary, not a specification.
 - Put stable capability semantics in one focused Markdown file: `docs/domain/<capability>.md` for a single context, or `docs/contexts/<context>/domain/<capability>.md` for multiple contexts.

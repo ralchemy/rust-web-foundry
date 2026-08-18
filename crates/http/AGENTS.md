@@ -10,6 +10,7 @@ Read `docs/guide/observability.md` before changing request trace extraction, spa
 
 - Depend only on `application` and `domain` inside the workspace; never depend on `infrastructure`.
 - Keep the aggregate Router state private and limited to configured Application capabilities. Handlers extract the smallest capability state through `FromRef`; never expose configuration, pools, repositories, clients, or concrete adapters to them.
+- Keep one production Router constructor and update all callers when its required capabilities change. Do not preserve an older signature with a second constructor that silently installs `Noop`, unavailable, or test adapters; test-only fakes stay under `#[cfg(test)]` and enter through the production constructor.
 - Use `State` for startup-injected capabilities and request extensions only for values derived from the current request. Construct neither inside a handler.
 - Keep handlers thin: extract, call the narrowest existing inward owner, and translate the result. Use an Application use case or Port for orchestration or business decisions; call a Domain constructor directly only for a pure invariant operation that needs no Application capability.
 - Keep business routes under `/api/v1` and health routes at `/health/live` and `/health/ready`; do not propagate HTTP versions inward.

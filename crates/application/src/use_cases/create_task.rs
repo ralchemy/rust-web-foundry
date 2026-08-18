@@ -16,8 +16,7 @@ where
         Self { policy, repository }
     }
 
-    pub async fn execute(&self, title: String) -> Result<Task, CreateTaskError> {
-        let title = TaskTitle::parse(&title).map_err(|_| CreateTaskError::InvalidTitle)?;
+    pub async fn execute(&self, title: TaskTitle) -> Result<Task, CreateTaskError> {
         let allowed = self
             .policy
             .is_allowed(&title)
@@ -117,11 +116,15 @@ mod tests {
         (CreateTask::new(policy, repository), calls)
     }
 
+    fn title(raw: &str) -> TaskTitle {
+        TaskTitle::parse(raw).expect("valid Task Title")
+    }
+
     #[test]
-    fn validates_then_checks_policy_then_persists_the_same_task() {
+    fn checks_policy_then_persists_the_same_typed_title() {
         let (use_case, calls) = use_case(Ok(true), Ok(()));
 
-        let task = block_on(use_case.execute("  Build 模板  ".into())).unwrap();
+        let task = block_on(use_case.execute(title("  Build 模板  "))).unwrap();
 
         let calls = calls.lock().unwrap();
         assert_eq!(calls[0], "policy:Build 模板");
@@ -129,17 +132,10 @@ mod tests {
     }
 
     #[test]
-    fn invalid_or_rejected_titles_never_reach_persistence() {
-        let (invalid, invalid_calls) = use_case(Ok(true), Ok(()));
-        assert_eq!(
-            block_on(invalid.execute("\n".into())),
-            Err(CreateTaskError::InvalidTitle)
-        );
-        assert!(invalid_calls.lock().unwrap().is_empty());
-
+    fn rejected_titles_never_reach_persistence() {
         let (rejected, rejected_calls) = use_case(Ok(false), Ok(()));
         assert_eq!(
-            block_on(rejected.execute("No".into())),
+            block_on(rejected.execute(title("No"))),
             Err(CreateTaskError::PolicyRejected)
         );
         assert_eq!(&*rejected_calls.lock().unwrap(), &["policy:No"]);
@@ -149,19 +145,19 @@ mod tests {
     fn maps_stable_port_failure_categories() {
         let (unavailable, _) = use_case(Err(TaskPolicyError::Unavailable), Ok(()));
         assert_eq!(
-            block_on(unavailable.execute("Task".into())),
+            block_on(unavailable.execute(title("Task"))),
             Err(CreateTaskError::PolicyUnavailable)
         );
 
         let (bad_response, _) = use_case(Err(TaskPolicyError::BadResponse), Ok(()));
         assert_eq!(
-            block_on(bad_response.execute("Task".into())),
+            block_on(bad_response.execute(title("Task"))),
             Err(CreateTaskError::PolicyBadResponse)
         );
 
         let (persistence, _) = use_case(Ok(true), Err(TaskRepositoryError));
         assert_eq!(
-            block_on(persistence.execute("Task".into())),
+            block_on(persistence.execute(title("Task"))),
             Err(CreateTaskError::Persistence)
         );
     }

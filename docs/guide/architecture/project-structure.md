@@ -39,7 +39,7 @@ A feature touches only the layers its behavior requires. Reuse an existing respo
 
 ## Grow a file into a directory module
 
-Start a responsibility in one file. When it grows multiple independently named workflows or stable responsibilities, promote the file to a directory module. For example, a complex Application workflow may grow from `permission_requests.rs` into:
+Start a responsibility in one file when only one workflow is known. When it grows another independently named workflow, promote the file to a directory module. When a confirmed design already contains several related workflows, create the capability directory from the start rather than adding several top-level command files. For example, a complex Application workflow may grow from `permission_requests.rs` into:
 
 ```text
 crates/application/src/use_cases/permission_requests/

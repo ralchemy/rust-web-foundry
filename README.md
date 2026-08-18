@@ -73,7 +73,8 @@ Run these commands from a generated project:
 | `just sqlx-prepare` | Apply development migrations and refresh `.sqlx` metadata |
 | `just serve` | Start the production server path |
 | `just test` | Run the workspace tests against MySQL |
-| `just check` | Run formatting, Clippy, and database-free tests |
+| `just architecture` | Check workspace dependency direction and inner-crate framework boundaries |
+| `just check` | Run architecture checks, formatting, Clippy, and database-free tests |
 | `just ci` | Run checks and database-backed acceptance steps against existing services |
 | `just verify` | Start dependencies and run the complete verification path |
 

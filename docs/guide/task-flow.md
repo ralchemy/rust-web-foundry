@@ -39,9 +39,9 @@ sequenceDiagram
     participant DB as infrastructure::MySqlTaskRepository
 
     Client->>HTTP: POST /api/v1/tasks with JSON bytes
-    HTTP->>UseCase: execute(String)
-    UseCase->>Domain: TaskTitle::parse(String)
-    Domain-->>UseCase: TaskTitle
+    HTTP->>Domain: TaskTitle::parse(String)
+    Domain-->>HTTP: TaskTitle
+    HTTP->>UseCase: execute(TaskTitle)
     UseCase->>Policy: is_allowed(&TaskTitle)
     Policy-->>UseCase: bool
     UseCase->>Domain: Task::new(TaskTitle)
@@ -59,8 +59,8 @@ The example touches every layer because its purpose is to prove the architecture
 | Boundary | Input | Conversion owner | Output |
 |---|---|---|---|
 | Request body | HTTP bytes and headers | Axum `Json` plus HTTP [`ApiError`](../../crates/http/src/errors/mod.rs) rejection conversion | `CreateTaskRequest { title: String }` |
-| HTTP to Application | `CreateTaskRequest` | HTTP handler | owned `String` |
-| Application to Domain | `String` | [`CreateTask`](../../crates/application/src/use_cases/create_task.rs) calling `TaskTitle::parse` | valid `TaskTitle` |
+| HTTP to Domain | `CreateTaskRequest.title` | HTTP handler calling `TaskTitle::parse` | valid `TaskTitle` |
+| HTTP to Application | `TaskTitle` | HTTP handler | [`CreateTask::execute(TaskTitle)`](../../crates/application/src/use_cases/create_task.rs) |
 | Application to Policy Port | `&TaskTitle` | Application use case | `TaskPolicy::is_allowed` call |
 | Policy Port to downstream HTTP | `&TaskTitle` | `HttpTaskPolicy` | private `PolicyRequest<'_>` serialized as JSON |
 | Downstream HTTP to Policy result | response bytes and status | `HttpTaskPolicy` | private `PolicyResponse`, then `bool` |
@@ -94,7 +94,7 @@ Concrete failures become less detailed as they move inward or toward the public 
 | malformed JSON or unknown field | Axum rejection → `ApiError::InvalidRequest` | none | `400 invalid_request` |
 | missing/wrong content type | Axum rejection → `ApiError::UnsupportedMediaType` | none | `415 unsupported_media_type` |
 | body over 8 KiB | Axum rejection → `ApiError::RequestTooLarge` | none | `413 request_too_large` |
-| `TaskTitle::parse` failure | `TaskTitleError` → `CreateTaskError::InvalidTitle` | `InvalidTitle` | `422 task_title_invalid` |
+| `TaskTitle::parse` failure | HTTP handler → `ApiError::TaskTitleInvalid` | none | `422 task_title_invalid` |
 | Policy returns `allowed: false` | bool → `CreateTaskError::PolicyRejected` | `PolicyRejected` | `422 task_policy_rejected` |
 | reqwest failure, 429, or downstream 5xx | concrete failure → `TaskPolicyError::Unavailable` | `PolicyUnavailable` | `503 task_policy_unavailable` |
 | non-200 success-path status or malformed Policy JSON | concrete failure → `TaskPolicyError::BadResponse` | `PolicyBadResponse` | `502 task_policy_bad_response` |
@@ -130,7 +130,7 @@ Add one of these only when a real behavior creates the corresponding responsibil
 | Evidence | What it proves |
 |---|---|
 | Domain tests beside `TaskTitle` and `Task` | invariant parsing, normalization, ULID identity, and valid construction |
-| Application tests beside `CreateTask` | validation → Policy → persistence ordering and failure short-circuiting |
+| Application tests beside `CreateTask` | typed value → Policy → persistence ordering and failure short-circuiting |
 | HTTP tests through the installed Router | DTO extraction, limits, response conversion, and fixed public error mapping |
 | Infrastructure policy test | client settings reject invalid URL schemes and zero timeout at startup |
 | [`app/tests/create_task.rs`](../../app/tests/create_task.rs) | production composition with real MySQL, an HTTP Policy stub, persistence, and the installed Router |

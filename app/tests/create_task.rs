@@ -153,6 +153,22 @@ async fn production_build_executes_the_real_task_path() {
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(state.calls.lock().unwrap().len(), policy_calls);
 
+    *state.mode.lock().unwrap() = Mode::Delayed;
+    let delayed_calls = state.calls.lock().unwrap().len();
+    let delayed_service = build(BuildConfig {
+        database_url: SecretString::from(database_url.clone()),
+        task_policy_url: format!("http://{address}/check"),
+        task_policy_timeout: Duration::from_millis(50),
+        tracing_enabled: true,
+    })
+    .await
+    .unwrap();
+    let (status, body) = post_task(delayed_service.router(), "Delayed").await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(body["error"]["code"], "task_policy_unavailable");
+    assert_eq!(state.calls.lock().unwrap().len(), delayed_calls + 1);
+    delayed_service.close().await;
+
     stub_task.abort();
     assert!(stub_task.await.unwrap_err().is_cancelled());
     let disconnected_service = build(BuildConfig {
@@ -174,22 +190,6 @@ async fn production_build_executes_the_real_task_path() {
             }
         }),
     );
-
-    *state.mode.lock().unwrap() = Mode::Delayed;
-    let delayed_calls = state.calls.lock().unwrap().len();
-    let delayed_service = build(BuildConfig {
-        database_url: SecretString::from(database_url.clone()),
-        task_policy_url: format!("http://{address}/check"),
-        task_policy_timeout: Duration::from_millis(50),
-        tracing_enabled: true,
-    })
-    .await
-    .unwrap();
-    let (status, body) = post_task(delayed_service.router(), "Delayed").await;
-    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
-    assert_eq!(body["error"]["code"], "task_policy_unavailable");
-    assert_eq!(state.calls.lock().unwrap().len(), delayed_calls + 1);
-    delayed_service.close().await;
 
     let after: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tasks")
         .fetch_one(&pool)
