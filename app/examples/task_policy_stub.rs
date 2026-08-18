@@ -16,7 +16,7 @@ async fn check(headers: HeaderMap, Json(_request): Json<Value>) -> Json<Value> {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     }
-    Json(json!({"allowed": true}))
+    Json(json!({"decision": "allowed"}))
 }
 
 #[tokio::main]

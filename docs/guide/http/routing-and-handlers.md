@@ -8,7 +8,8 @@ This table is the Guide's only installed-route catalogue. Code and public Router
 
 | Method | Path | Responsibility |
 |---|---|---|
-| `POST` | `/api/v1/tasks` | Validate the HTTP shape, call `CreateTask`, and return the created Task DTO |
+| `POST` | `/api/v1/tasks` | Convert the create request, call `CreateTask`, and return the created Task DTO |
+| `GET` | `/api/v1/tasks/{task_id}` | Parse the typed Task ID, call `GetTask`, and return the Task DTO or fixed not-found error |
 | `GET` | `/health/live` | Report that the HTTP runtime can respond, without external I/O |
 | `GET` | `/health/ready` | Call `ReadinessProbe` and translate its stable result |
 
@@ -22,22 +23,23 @@ This table is the Guide's only installed-route catalogue. Code and public Router
 method + path
     → installed Router
     → ordered extractors
-    → handler translation
+    → adapter-owned boundary conversion
     → narrowest existing inward owner
-    → HTTP DTO or ApiError
+    → Application result conversion or ApiError
     → status + JSON
 ```
 
-The canonical [CreateTask flow](../task-flow.md) follows this path across every crate; it is a reference slice, not an exhaustive route catalogue. Route registration selects an HTTP operation; it does not construct dependencies or contain business decisions.
+The canonical [Task golden path](../task-flow.md) follows both create and lookup across every crate; it is a reference slice, not an exhaustive route catalogue. Route registration selects an HTTP operation; it does not construct dependencies or contain business decisions.
 
 ## Handler responsibility
 
-The [CreateTask handler](../../../crates/http/src/handlers/task.rs) performs four operations:
+The Task handlers perform five operations:
 
-1. Extract its focused Application capability and HTTP request DTO.
-2. Start the adapter-owned child span without recording request data.
-3. Call `CreateTask::execute` once.
-4. Convert the result into `TaskResponse` or `ApiError`.
+1. Extract focused Application capabilities and HTTP request/path DTOs.
+2. Convert untrusted transport representations through `TryFrom` or `FromStr`.
+3. Start any adapter-owned child span without recording request data.
+4. Call one narrow Application use case.
+5. Convert its approved result into `TaskResponse` or a failure into `ApiError`.
 
 Health handlers follow the same translation rule by invoking the Application-owned readiness Port. A handler may call a Domain constructor directly only when the public operation is exactly that pure invariant construction and needs no Application decision or capability. Otherwise, Application owns orchestration.
 
@@ -45,7 +47,7 @@ Keep SQLx, reqwest, configuration, concrete adapters, Domain rule implementation
 
 ## Extractor ordering
 
-Axum evaluates handler arguments from left to right. Extractors based on request parts, including focused `State`, belong before the one extractor that consumes the body. The CreateTask handler therefore accepts Axum `Json<CreateTaskRequest>` as its final extractor and maps `JsonRejection` through [`ApiError`](../../../crates/http/src/errors/mod.rs). [Validation boundaries](validation.md) explains why those transport checks do not replace Domain construction.
+Axum evaluates handler arguments from left to right. Extractors based on request parts, including focused `State` and `Path`, belong before the one extractor that consumes the body. The CreateTask handler therefore accepts Axum `Json<CreateTaskRequest>` as its final extractor and maps `JsonRejection` through [`ApiError`](../../../crates/http/src/errors/mod.rs). [Validation boundaries](validation.md) explains why those transport checks do not replace Domain construction.
 
 The Router's 8 KiB limit applies before JSON deserialization. A new body-consuming extractor must remain last; a handler must not attempt to consume the body twice.
 
@@ -67,4 +69,4 @@ Axum's `macros` feature is enabled, so a non-generic handler may temporarily or 
 
 Keep registration in `routes/` and behavior in the existing responsibility directories. Add a public route to the installed-routes table above; update another chapter only when the route changes that chapter's stable rule. Split a route family only when it contains enough real routes to own a coherent interface; do not pre-create version, CRUD, controller, or responder trees.
 
-Tests drive the public Router with real methods, paths, headers, and bodies. They assert the exact status and public JSON contract, including 404 and 405. A detached handler test cannot prove nesting, limits, middleware, focused state extraction, or fallbacks.
+Tests drive the public Router with real methods, paths, headers, and bodies. They assert the exact status and public JSON contract, including invalid IDs, not-found resources, 404, and 405. A detached handler test cannot prove nesting, limits, middleware, focused state extraction, or fallbacks.

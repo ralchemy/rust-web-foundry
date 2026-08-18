@@ -35,6 +35,7 @@ Before adding authentication, authorization, sessions, bearer credentials, passw
 Before accepting a new untrusted input or destination, handling another secret, or changing network exposure, read `docs/guide/security.md`.
 Before changing test placement, public Just quality commands, or cross-crate acceptance evidence, read `docs/guide/testing.md`.
 Before adding or replacing a dependency, read `docs/guide/development.md#dependency-selection`.
+Before adding or changing a boundary conversion, textual parser, database row, downstream wire type, or public conversion trait, read `docs/guide/reference/idiomatic-rust.md`.
 Before performance tuning, caching, compression, streaming, pool changes, benchmarking, or profiling, read `docs/guide/reference/performance.md`.
 Before adding `tokio::spawn`, `spawn_blocking`, `select!`, a timeout around mutating work, a channel loop, periodic work, a background job, or another long-lived subsystem, read `docs/guide/reference/async-and-cancellation.md`.
 Before changing outbound HTTP timeout, retry, idempotency, redirect, or resilience policy, read `docs/guide/reference/outbound-http.md`.
@@ -108,6 +109,18 @@ The checkpoint must exist before the production implementation begins. Update it
 - A value type owns its parsing, validation, and formatting rules. Do not repeat string validation, status matching, or unit conversion across callers.
 - Prefer enums and explicit transitions to boolean flag combinations or string comparisons.
 
+### Boundary conversion contract
+
+- Parse stable textual representations with `FromStr` and call them through `str::parse` at the adapter that owns the raw text.
+- Use `TryFrom` for fallible HTTP DTO, database row, configuration, and downstream wire conversions.
+- Use `From` only for infallible conversions that preserve the complete target contract.
+- Implement `From` or `TryFrom`, not `Into` or `TryInto` directly.
+- Keep creation, reconstitution, and state changes as named Domain operations rather than forcing them into generic conversion traits.
+- Keep HTTP DTOs, database rows, and downstream wire types private to their owning adapters.
+- Do not add public `to_domain`, `into_domain`, `from_row`, or `to_response` methods when a standard conversion trait expresses the same seam.
+- Do not duplicate a model only to mirror another layer. Add a type when contract, representation, trust, lifecycle, or semantic meaning differs.
+- Record source type, target type, conversion mechanism, conversion owner, and failure owner for every changed boundary in the design checkpoint.
+
 ### Human-readable code
 
 - Name types with Domain nouns, functions with Domain verb phrases, booleans as predicates, and collections with plural nouns.
@@ -155,16 +168,8 @@ Do not delete, weaken, or move an existing assertion out of the exercised path m
 
 Fix violations introduced or exposed in the touched responsibility. Record material pre-existing debt without expanding the change unless it prevents the requested behavior or required verification.
 
-## Agent skills
+## Optional agent tooling
 
-### Issue tracker
+External agent toolkits may create untracked local configuration or working files under `.scratch/`, `CONTEXT.md`, `docs/adr/`, or ignored files in `docs/agents/`. Those files are optional tooling artifacts and are not part of the repository contract unless a project explicitly commits them.
 
-Issues are tracked as local Markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Use the default canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-This is a single-context repository using root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+Project Rules, the nearest tracked `AGENTS.md`, source code, tests, CI, and the Guide remain authoritative regardless of which agent framework is active. The tracked `docs/agents/domain.md` defines framework-neutral Domain workflow outcomes; a compatible Skill may automate that procedure, but no Skill is required to follow it.

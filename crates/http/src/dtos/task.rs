@@ -1,23 +1,28 @@
-use domain::Task;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct CreateTaskRequest {
     pub(crate) title: String,
+    pub(crate) description: Option<String>,
+    pub(crate) priority: Option<String>,
+    pub(crate) assignee_id: Option<String>,
+    pub(crate) estimate_minutes: Option<u32>,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize)]
+pub(crate) struct TaskPath {
+    pub(crate) task_id: String,
+}
+
+#[derive(Debug, Serialize)]
 pub(crate) struct TaskResponse {
-    id: String,
-    title: String,
-}
-
-impl From<Task> for TaskResponse {
-    fn from(task: Task) -> Self {
-        Self {
-            id: task.id().to_string(),
-            title: task.title().as_str().to_owned(),
-        }
-    }
+    pub(crate) id: String,
+    pub(crate) title: String,
+    pub(crate) description: Option<String>,
+    pub(crate) priority: String,
+    pub(crate) status: String,
+    pub(crate) assignee_id: Option<String>,
+    pub(crate) estimate_minutes: Option<u32>,
+    pub(crate) revision: u64,
 }

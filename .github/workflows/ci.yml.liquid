@@ -43,5 +43,6 @@ jobs:
           components: clippy,rustfmt
       - run: cargo install just --version 1.58.0 --locked
       - run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,mysql
+      - run: bash scripts/check-idiomatic-rust.sh
       - run: just ci
 {% endraw %}

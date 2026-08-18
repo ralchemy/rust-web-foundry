@@ -3,7 +3,7 @@ mod observability;
 mod server;
 mod settings;
 
-use application::CreateTask;
+use application::{CreateTask, GetTask};
 use infrastructure::{HttpTaskPolicy, MySqlReadinessProbe, MySqlTaskRepository};
 use secrecy::{ExposeSecret, SecretString};
 use sqlx::MySqlPool;
@@ -40,7 +40,8 @@ pub async fn build(config: BuildConfig) -> AppResult<BuiltService> {
     let repository = MySqlTaskRepository::new(pool.clone());
     let readiness = MySqlReadinessProbe::new(pool.clone(), Duration::from_secs(1));
     let router = http::router(
-        CreateTask::new(policy, repository),
+        CreateTask::new(policy, repository.clone()),
+        GetTask::new(repository),
         readiness,
         config.tracing_enabled,
     );

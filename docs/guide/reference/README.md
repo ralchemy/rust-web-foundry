@@ -10,6 +10,7 @@ This directory preserves reusable Rust Web knowledge without turning every optio
 
 ## Chapters
 
+- [Idiomatic Rust](idiomatic-rust.md): semantic types, standard conversions, ownership, naming, readable control flow, errors, visibility, and checked SQLx mapping.
 - [Performance](performance.md): measurement, async blocking, pool sizing, query work, HTTP payload cost, and tool selection.
 - [Async and cancellation](async-and-cancellation.md): dropped futures, channels, background work, timeouts, task ownership, blocking work, and locks.
 - [Authentication and authorization](authentication-and-authorization.md): credential mechanisms, principal construction, policy ownership, revocation, and browser security.

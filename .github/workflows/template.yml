@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -52,8 +56,9 @@ jobs:
           test -f .github/workflows/ci.yml
           test "$(find crates -name Cargo.toml | wc -l)" -eq 4
           test -f app/Cargo.toml
-          if rg --hidden '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
+          if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"
             exit 1
           fi
+          bash scripts/check-idiomatic-rust.sh
           just ci

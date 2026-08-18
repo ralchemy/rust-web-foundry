@@ -1,5 +1,5 @@
 use crate::dtos::ErrorEnvelope;
-use application::CreateTaskError;
+use application::{CreateTaskError, GetTaskError};
 use axum::{
     Json,
     extract::rejection::JsonRejection,
@@ -13,7 +13,9 @@ pub(crate) enum ApiError {
     InvalidRequest,
     UnsupportedMediaType,
     RequestTooLarge,
-    TaskTitleInvalid,
+    TaskInputInvalid,
+    TaskIdInvalid,
+    TaskNotFound,
     TaskPolicyRejected,
     TaskPolicyBadResponse,
     TaskPolicyUnavailable,
@@ -28,6 +30,12 @@ impl From<CreateTaskError> for ApiError {
             CreateTaskError::PolicyBadResponse => Self::TaskPolicyBadResponse,
             CreateTaskError::Persistence => Self::Internal,
         }
+    }
+}
+
+impl From<GetTaskError> for ApiError {
+    fn from(_: GetTaskError) -> Self {
+        Self::Internal
     }
 }
 
@@ -65,15 +73,25 @@ impl ApiError {
                 "request_too_large",
                 "request body is too large",
             ),
-            Self::TaskTitleInvalid => (
+            Self::TaskInputInvalid => (
                 StatusCode::UNPROCESSABLE_ENTITY,
-                "task_title_invalid",
-                "task title is invalid",
+                "task_input_invalid",
+                "task input is invalid",
+            ),
+            Self::TaskIdInvalid => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "task_id_invalid",
+                "task id is invalid",
+            ),
+            Self::TaskNotFound => (
+                StatusCode::NOT_FOUND,
+                "task_not_found",
+                "task was not found",
             ),
             Self::TaskPolicyRejected => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "task_policy_rejected",
-                "task policy rejected the title",
+                "task policy rejected the task",
             ),
             Self::TaskPolicyBadResponse => (
                 StatusCode::BAD_GATEWAY,

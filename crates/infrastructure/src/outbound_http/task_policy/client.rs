@@ -1,25 +1,13 @@
-use application::{TaskPolicy, TaskPolicyError};
-use domain::TaskTitle;
+use super::wire::{PolicyRequestWire, PolicyResponseWire};
+use application::{TaskPolicy, TaskPolicyDecision, TaskPolicyError, TaskPolicyInput};
 use fastrace::{future::FutureExt, local::LocalSpan, prelude::Span};
 use reqwest::{Client, StatusCode, redirect::Policy, retry};
-use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 #[derive(Clone)]
 pub struct HttpTaskPolicy {
     client: Client,
     url: reqwest::Url,
-}
-
-#[derive(Serialize)]
-struct PolicyRequest<'a> {
-    title: &'a str,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct PolicyResponse {
-    allowed: bool,
 }
 
 impl HttpTaskPolicy {
@@ -45,7 +33,10 @@ impl HttpTaskPolicy {
 }
 
 impl TaskPolicy for HttpTaskPolicy {
-    async fn is_allowed(&self, title: &TaskTitle) -> Result<bool, TaskPolicyError> {
+    async fn evaluate(
+        &self,
+        input: TaskPolicyInput<'_>,
+    ) -> Result<TaskPolicyDecision, TaskPolicyError> {
         let span = Span::enter_with_local_parent("task_policy.check").with_properties(|| {
             [
                 ("span.kind", "client"),
@@ -59,9 +50,7 @@ impl TaskPolicy for HttpTaskPolicy {
                 .client
                 .post(self.url.clone())
                 .headers(fastrace_reqwest::traceparent_headers())
-                .json(&PolicyRequest {
-                    title: title.as_str(),
-                })
+                .json(&PolicyRequestWire::from(input))
                 .send()
                 .await
                 .map_err(|_| {
@@ -79,14 +68,15 @@ impl TaskPolicy for HttpTaskPolicy {
                 mark_error("task_policy_bad_response");
                 return Err(TaskPolicyError::BadResponse);
             }
-            response
-                .json::<PolicyResponse>()
-                .await
-                .map(|response| response.allowed)
-                .map_err(|_| {
-                    mark_error("task_policy_bad_response");
-                    TaskPolicyError::BadResponse
-                })
+
+            let response = response.json::<PolicyResponseWire>().await.map_err(|_| {
+                mark_error("task_policy_bad_response");
+                TaskPolicyError::BadResponse
+            })?;
+            response.try_into().map_err(|_| {
+                mark_error("task_policy_bad_response");
+                TaskPolicyError::BadResponse
+            })
         }
         .in_span(span)
         .await

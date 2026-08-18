@@ -1,4 +1,4 @@
-use application::{CreateTask, ReadinessProbe, TaskPolicy, TaskRepository};
+use application::{CreateTask, GetTask, ReadinessProbe, TaskPolicy, TaskRepository};
 use axum::extract::FromRef;
 
 #[derive(Clone)]
@@ -8,7 +8,10 @@ pub(crate) struct HttpState<P, R, H> {
 }
 
 #[derive(Clone)]
-pub(crate) struct TaskState<P, R>(pub(crate) CreateTask<P, R>);
+pub(crate) struct TaskState<P, R> {
+    pub(crate) create: CreateTask<P, R>,
+    pub(crate) get: GetTask<R>,
+}
 
 #[derive(Clone)]
 pub(crate) struct HealthState<H>(pub(crate) H);
@@ -19,9 +22,12 @@ where
     R: TaskRepository,
     H: ReadinessProbe,
 {
-    pub(crate) fn new(create_task: CreateTask<P, R>, readiness: H) -> Self {
+    pub(crate) fn new(create_task: CreateTask<P, R>, get_task: GetTask<R>, readiness: H) -> Self {
         Self {
-            task: TaskState(create_task),
+            task: TaskState {
+                create: create_task,
+                get: get_task,
+            },
             health: HealthState(readiness),
         }
     }

@@ -30,7 +30,7 @@ infrastructure ─┘
 app ──> http + infrastructure + application + domain
 ```
 
-The generated Task path is deliberately small: `POST /api/v1/tasks` validates and normalizes a title, calls an external TaskPolicy Port, persists one MySQL row, and returns a fixed public response/error contract.
+The generated Task golden path includes `POST /api/v1/tasks` and `GET /api/v1/tasks/{task_id}`. It demonstrates independent HTTP DTOs, Application commands and views, validated Domain value objects, private MySQL rows, private downstream wire types, `FromStr`/`TryFrom`/`From` conversions, checked SQLx queries, and reconstruction of untrusted persisted values through Domain invariants.
 
 ## Generate a service
 
@@ -58,7 +58,7 @@ cd my-service
 just verify
 ```
 
-`just verify` starts MySQL with Docker Compose and runs the generated project's formatting, Clippy, tests, migration, SQLx metadata verification, live HTTP smoke checks, trace propagation checks, and lifecycle acceptance checks.
+`just verify` starts MySQL with Docker Compose and runs the generated project's formatting, Clippy, tests, migration, SQLx metadata verification, live HTTP smoke checks, and trace propagation checks. The dedicated `just lifecycle` command exercises in-flight request draining and shutdown-timeout behavior.
 
 ## Local commands
 
@@ -76,7 +76,8 @@ Run these commands from a generated project:
 | `just architecture` | Check workspace dependency direction and inner-crate framework boundaries |
 | `just check` | Run architecture checks, formatting, Clippy, and database-free tests |
 | `just ci` | Run checks and database-backed acceptance steps against existing services |
-| `just verify` | Start dependencies and run the complete verification path |
+| `just verify` | Start dependencies and run the complete standard verification path |
+| `just lifecycle` | Prove graceful drain and shutdown-timeout behavior |
 
 The server does not run migrations automatically. Use the dedicated `migrate` command with migration credentials before starting `serve`.
 
@@ -86,12 +87,12 @@ The server does not run migrations automatically. Use the dedicated `migrate` co
 - [Generated-service README template](README.md.liquid)
 - [Guide](docs/guide/README.md)
 - [Architecture](docs/guide/architecture/README.md)
-- [Task flow](docs/guide/task-flow.md)
+- [Task golden path](docs/guide/task-flow.md)
+- [Idiomatic Rust code contract](docs/guide/reference/idiomatic-rust.md)
 - [Testing and quality gates](docs/guide/testing.md)
 - [Observability](docs/guide/observability.md)
 - [Outbound HTTP](docs/guide/reference/outbound-http.md)
 - [Project Rules](AGENTS.md)
-- [Template validation evidence](.scratch/template-validation/issues/06-validation-report-and-handoff.md)
 
 ## Referenced projects and attribution
 
@@ -126,7 +127,7 @@ The historical name **Bulletproof Rust Web** is retained only in validation and 
 | [`Axum`](https://github.com/tokio-rs/axum) | HTTP server and routing | [Documentation](https://docs.rs/axum/) |
 | [`Tokio`](https://github.com/tokio-rs/tokio) | Async runtime and process signals | [Documentation](https://docs.rs/tokio/) |
 | [`SQLx`](https://github.com/launchbadge/sqlx) | MySQL pool, migrations, and SQL integration | [Documentation](https://docs.rs/sqlx/) |
-| [`reqwest`](https://github.com/seanmonstar/reqwest) | Outbound TaskPolicy HTTP client | [Documentation](https://docs.rs/reqwest/) |
+| [`reqwest`](https://github.com/sean-monstar/reqwest) | Outbound TaskPolicy HTTP client | [Documentation](https://docs.rs/reqwest/) |
 | [`fastrace`](https://github.com/fastn-stack/fastrace) | Trace spans and W3C trace context propagation | [Documentation](https://docs.rs/fastrace/) |
 | [`fastrace-axum`](https://crates.io/crates/fastrace-axum) | Axum request trace integration | [Documentation](https://docs.rs/fastrace-axum/) |
 | [`fastrace-reqwest`](https://crates.io/crates/fastrace-reqwest) | Outbound reqwest trace propagation | [Documentation](https://docs.rs/fastrace-reqwest/) |
@@ -141,7 +142,7 @@ The historical name **Bulletproof Rust Web** is retained only in validation and 
 
 ## Validation status
 
-Fresh generated projects have been validated for template rendering, workspace compilation, formatting, Clippy, MySQL migration, SQLx verification, production-path Task behavior, trace propagation, and lifecycle behavior when the documented Docker/MySQL environment is available.
+Fresh generated projects are validated for template rendering, workspace compilation, formatting, Clippy, MySQL migrations, SQLx verification, type-safe create and lookup behavior, downstream policy conversion, trace propagation, and process lifecycle behavior when the documented Docker/MySQL environment is available.
 
 Database-backed checks require explicit `DATABASE_URL`, `MIGRATION_DATABASE_URL`, and `TEST_DATABASE_URL` values. AI/context findings in the validation material are limited to the tested model, prompts, repository state, and context protocol.
 
