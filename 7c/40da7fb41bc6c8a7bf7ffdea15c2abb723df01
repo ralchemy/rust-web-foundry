@@ -1,0 +1,100 @@
+docs/guide/domain/modeling.md
+  s_ffc39b9ea9c547::t_7885a24dbe28c3 11-12,17,40,48
+crates/http/AGENTS.md
+  s_ffc39b9ea9c547::t_fba88028f81374 13
+README.md.liquid
+  s_ffc39b9ea9c547::t_31437b09a2b59e 62-63
+README.md
+  s_ffc39b9ea9c547::t_31437b09a2b59e 76-77
+postmortem/2026-08-18-balance-agent-rules-with-judgment.md
+  s_ffc39b9ea9c547::t_db07d10fb1e1ea 23-24
+  s_ffc39b9ea9c547::t_3877e1fd10967d 5,37
+  s_ffc39b9ea9c547::t_294740d013eb86 1-4,6-8,13-17,20,33-36,38-39
+  s_ffc39b9ea9c547::t_34ff46e7cab379 32
+  s_ffc39b9ea9c547::t_33f3b7570866b9 9-12
+  s_ffc39b9ea9c547::t_446d06697ed5c2 25-26
+  s_ffc39b9ea9c547::t_46da685192942c 18-19
+  s_ffc39b9ea9c547::t_63570ff6e98079 21-22
+  s_ffc39b9ea9c547::t_fba88028f81374 27-30
+  s_ffc39b9ea9c547::t_fe1584edec562a 31
+justfile.liquid
+  s_ffc39b9ea9c547::t_fe1584edec562a 111
+  s_ffc39b9ea9c547::t_5d2246b65a3d6b 32
+  s_ffc39b9ea9c547::t_31437b09a2b59e 28-31,33-56,64,83
+  s_ffc39b9ea9c547::t_af570d9281e112 57-63
+docs/guide/testing.md
+  s_ffc39b9ea9c547::t_294740d013eb86 57
+  s_ffc39b9ea9c547::t_7885a24dbe28c3 10
+  s_ffc39b9ea9c547::t_31437b09a2b59e 58
+crates/application/src/use_cases/create_task.rs
+  s_ffc39b9ea9c547::t_68181a83e9c1d4 124
+  s_ffc39b9ea9c547::t_af570d9281e112 19,119-122,127,135,138,148,154,160
+docs/guide/development.md
+  s_ffc39b9ea9c547::t_294740d013eb86 43,45
+  s_ffc39b9ea9c547::t_31437b09a2b59e 30,37,39,42,46
+  s_ffc39b9ea9c547::t_bcb09c9e99d422 29,47
+crates/http/src/handlers/task.rs
+  s_ffc39b9ea9c547::t_af570d9281e112 12,27-36,51
+app/tests/create_task.rs
+  s_ffc39b9ea9c547::t_db07d10fb1e1ea 156-171
+postmortem/2026-08-17-keep-agent-rules-framework-neutral.md
+  s_ffc39b9ea9c547::t_3de6a261b64cab 25-26
+  s_ffc39b9ea9c547::t_294740d013eb86 3-4
+  s_ffc39b9ea9c547::t_7885a24dbe28c3 21-22,31
+  s_ffc39b9ea9c547::t_e4f80cf9ccb1f6 13-14,18-19
+  s_ffc39b9ea9c547::t_3a7286595f6298 11
+  s_ffc39b9ea9c547::t_97cbe149f6e90e 23-24
+  s_ffc39b9ea9c547::t_31437b09a2b59e 1-2,5-10,12,15-17,20,27-30
+docs/guide/task-flow.md
+  s_ffc39b9ea9c547::t_7885a24dbe28c3 42-44,62-63,97,133
+AGENTS.md
+  s_ffc39b9ea9c547::t_db07d10fb1e1ea 100,153-154
+  s_ffc39b9ea9c547::t_46da685192942c 122-123,145
+  s_ffc39b9ea9c547::t_9bca700a5aaaaf 73,79
+  s_ffc39b9ea9c547::t_294740d013eb86 135-138,146-148,156
+  s_ffc39b9ea9c547::t_33f3b7570866b9 9-14,149-152
+  s_ffc39b9ea9c547::t_bcb09c9e99d422 7-8,106
+  s_ffc39b9ea9c547::t_fba88028f81374 75
+  s_ffc39b9ea9c547::t_31437b09a2b59e 3-6,68-72,77,85,131-134,139
+crates/application/AGENTS.md
+  s_ffc39b9ea9c547::t_fba88028f81374 11,15
+  s_ffc39b9ea9c547::t_bcb09c9e99d422 7
+  s_ffc39b9ea9c547::t_46da685192942c 13
+crates/domain/AGENTS.md
+  s_ffc39b9ea9c547::t_fba88028f81374 10
+  s_ffc39b9ea9c547::t_33f3b7570866b9 12
+  s_ffc39b9ea9c547::t_bcb09c9e99d422 13
+docs/guide/architecture/ports-and-adapters.md
+  s_ffc39b9ea9c547::t_7885a24dbe28c3 23
+docs/guide/architecture/project-structure.md
+  s_ffc39b9ea9c547::t_a4809c163a17b2 42
+docs/agents/domain.md
+  s_ffc39b9ea9c547::t_9bca700a5aaaaf 21,27
+  s_ffc39b9ea9c547::t_31437b09a2b59e 16-20,23-26,31
+  s_ffc39b9ea9c547::t_fba88028f81374 33
+crates/infrastructure/AGENTS.md
+  s_ffc39b9ea9c547::t_db07d10fb1e1ea 13,26
+  s_ffc39b9ea9c547::t_fba88028f81374 15
+app/AGENTS.md
+  s_ffc39b9ea9c547::t_33f3b7570866b9 16
+docs/guide/security.md
+  s_ffc39b9ea9c547::t_47d9225fa0266c 24
+docs/guide/http/validation.md
+  s_ffc39b9ea9c547::t_7885a24dbe28c3 8,21,28,107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7c40da7fb41bc6c8a7bf7ffdea15c2abb723df01",
+  "prompts": {},
+  "sessions": {
+    "s_ffc39b9ea9c547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019feeb1-2003-7b71-a093-9230126eebff",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    }
+  }
+}
