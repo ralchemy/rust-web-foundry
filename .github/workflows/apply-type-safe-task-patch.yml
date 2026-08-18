@@ -1,0 +1,57 @@
+name: Apply type-safe Task implementation patch
+
+on:
+  push:
+    branches:
+      - agent/type-safe-task-golden-path
+    paths:
+      - .github/workflows/apply-type-safe-task-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: agent/type-safe-task-golden-path
+
+      - name: Apply implementation patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch=.github/patches/type-safe-task-commits.patch
+          test -s "$patch"
+
+          if head -n 1 "$patch" | grep -Eq '^From [0-9a-f]{40} '; then
+            git am --3way "$patch"
+          else
+            git apply --3way "$patch"
+          fi
+
+      - name: Remove staging-only files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/patches/type-safe-task-commits.patch
+          rm -f .github/workflows/apply-type-safe-task-patch.yml
+          rmdir .github/patches 2>/dev/null || true
+
+      - name: Format Rust sources
+        shell: bash
+        run: cargo fmt --all
+
+      - name: Commit implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "chatgpt-agent"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: add type-safe Task golden path"
+          git push origin HEAD:agent/type-safe-task-golden-path
