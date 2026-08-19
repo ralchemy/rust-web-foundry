@@ -1,4 +1,8 @@
-use std::{error::Error, fmt};
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TaskIdError;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct AssigneeIdError;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TaskTitleError {
@@ -7,10 +11,21 @@ pub enum TaskTitleError {
     ControlCharacter,
 }
 
-impl fmt::Display for TaskTitleError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("task title is invalid")
-    }
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TaskDescriptionError {
+    Empty,
+    TooLong,
+    ControlCharacter,
 }
 
-impl Error for TaskTitleError {}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TaskPriorityError;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TaskStatusError;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TaskEstimateMinutesError;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TaskRevisionError;

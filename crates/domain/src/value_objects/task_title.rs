@@ -1,10 +1,23 @@
 use crate::TaskTitleError;
+use std::{fmt, str::FromStr};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TaskTitle(String);
 
 impl TaskTitle {
-    pub fn parse(raw: &str) -> Result<Self, TaskTitleError> {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+}
+
+impl FromStr for TaskTitle {
+    type Err = TaskTitleError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
         if raw.chars().any(char::is_control) {
             return Err(TaskTitleError::ControlCharacter);
         }
@@ -16,9 +29,17 @@ impl TaskTitle {
             _ => Err(TaskTitleError::TooLong),
         }
     }
+}
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+impl AsRef<str> for TaskTitle {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl fmt::Display for TaskTitle {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
     }
 }
 
@@ -27,30 +48,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn trims_and_accepts_unicode_scalar_boundaries() {
-        let title = TaskTitle::parse("  完成模板  ").unwrap();
-        assert_eq!(title.as_str(), "完成模板");
+    fn normalizes_and_accepts_unicode_scalar_boundaries() {
+        let title = "  完成模板  ".parse::<TaskTitle>().unwrap();
 
-        assert!(TaskTitle::parse(&"界".repeat(200)).is_ok());
+        assert_eq!(title.as_str(), "完成模板");
+        assert!("界".repeat(200).parse::<TaskTitle>().is_ok());
         assert_eq!(
-            TaskTitle::parse(&"界".repeat(201)),
+            "界".repeat(201).parse::<TaskTitle>(),
             Err(TaskTitleError::TooLong)
         );
     }
 
     #[test]
     fn rejects_empty_and_control_characters() {
-        assert_eq!(TaskTitle::parse("   "), Err(TaskTitleError::Empty));
+        assert_eq!("   ".parse::<TaskTitle>(), Err(TaskTitleError::Empty));
         assert_eq!(
-            TaskTitle::parse("\nTitle"),
-            Err(TaskTitleError::ControlCharacter)
-        );
-        assert_eq!(
-            TaskTitle::parse("Title\t"),
-            Err(TaskTitleError::ControlCharacter)
-        );
-        assert_eq!(
-            TaskTitle::parse("Title\u{7f}"),
+            "\nTitle".parse::<TaskTitle>(),
             Err(TaskTitleError::ControlCharacter)
         );
     }

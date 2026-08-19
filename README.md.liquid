@@ -2,9 +2,10 @@
 
 Runnable Axum reference service generated from the Rust Web Foundry Project Template.
 
-The generated service intentionally includes a canonical Task vertical slice. It demonstrates
-Clean Architecture boundaries, persistence, outbound Ports, HTTP contracts, observability, and
-process lifecycle. Task is a reference slice, not a universal task-management domain model.
+The generated service intentionally includes a canonical Task create-and-lookup vertical slice. It
+demonstrates Clean Architecture boundaries, explicit boundary conversions, private database and
+wire models, checked SQLx persistence, outbound Ports, HTTP contracts, observability, and process
+lifecycle. Task is a reference slice, not a universal task-management domain model.
 
 ## Prerequisites
 
@@ -47,7 +48,7 @@ infrastructure ──┘
 app ──> http + infrastructure + application + domain
 ```
 
-See [architecture](docs/guide/architecture/README.md), [project structure](docs/guide/architecture/project-structure.md), and the [Task flow](docs/guide/task-flow.md).
+See [architecture](docs/guide/architecture/README.md), [project structure](docs/guide/architecture/project-structure.md), the [Task flow](docs/guide/task-flow.md), and the [Idiomatic Rust code contract](docs/guide/reference/idiomatic-rust.md).
 
 ## Commands
 

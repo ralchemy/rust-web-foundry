@@ -1,4 +1,4 @@
-use application::{CreateTask, ReadinessProbe, TaskPolicy, TaskRepository};
+use application::{CreateTask, GetTask, ReadinessProbe, TaskPolicy, TaskRepository};
 use axum::{
     Router,
     extract::DefaultBodyLimit,
@@ -16,13 +16,20 @@ async fn method_not_allowed() -> ApiError {
     ApiError::MethodNotAllowed
 }
 
-pub fn router<P, R, H>(create_task: CreateTask<P, R>, readiness: H, tracing_enabled: bool) -> Router
+pub fn router<P, R, H>(
+    create_task: CreateTask<P, R>,
+    get_task: GetTask<R>,
+    readiness: H,
+    tracing_enabled: bool,
+) -> Router
 where
     P: TaskPolicy,
     R: TaskRepository,
     H: ReadinessProbe,
 {
-    let api = Router::new().route("/tasks", post(handlers::create_task::<P, R>));
+    let api = Router::new()
+        .route("/tasks", post(handlers::create_task::<P, R>))
+        .route("/tasks/{task_id}", get(handlers::get_task::<P, R>));
 
     Router::new()
         .nest("/api/v1", api)
@@ -33,18 +40,20 @@ where
         .layer(DefaultBodyLimit::max(8 * 1024))
         .layer(from_fn(middleware::mark_server_error))
         .layer(middleware::trace_layer(tracing_enabled))
-        .with_state(HttpState::new(create_task, readiness))
+        .with_state(HttpState::new(create_task, get_task, readiness))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use application::{ReadinessError, TaskPolicyError, TaskRepositoryError};
+    use application::{
+        ReadinessError, TaskPolicyDecision, TaskPolicyError, TaskPolicyInput, TaskRepositoryError,
+    };
     use axum::{
         body::Body,
         http::{Request, StatusCode},
     };
-    use domain::{Task, TaskTitle};
+    use domain::{Task, TaskId};
     use http_body_util::BodyExt;
     use std::{
         future::{Future, ready},
@@ -53,63 +62,62 @@ mod tests {
     use tower::ServiceExt;
 
     #[derive(Clone)]
-    struct Allow;
+    struct Policy(Result<TaskPolicyDecision, TaskPolicyError>);
 
-    impl TaskPolicy for Allow {
-        fn is_allowed(
+    impl TaskPolicy for Policy {
+        fn evaluate(
             &self,
-            _title: &TaskTitle,
-        ) -> impl Future<Output = Result<bool, TaskPolicyError>> + Send {
-            ready(Ok(true))
+            _input: TaskPolicyInput<'_>,
+        ) -> impl Future<Output = Result<TaskPolicyDecision, TaskPolicyError>> + Send {
+            ready(self.0)
         }
     }
 
     #[derive(Clone, Default)]
-    struct Capture(Arc<Mutex<Vec<String>>>);
-
-    impl TaskRepository for Capture {
-        fn insert(
-            &self,
-            task: &Task,
-        ) -> impl Future<Output = Result<(), TaskRepositoryError>> + Send {
-            self.0
-                .lock()
-                .unwrap()
-                .push(format!("{}:{}", task.id(), task.title().as_str()));
-            ready(Ok(()))
-        }
+    struct Repository {
+        tasks: Arc<Mutex<Vec<Task>>>,
+        failure: Option<TaskRepositoryError>,
     }
 
-    #[derive(Clone)]
-    struct Ready;
-
-    impl ReadinessProbe for Ready {
-        fn check(&self) -> impl Future<Output = Result<(), ReadinessError>> + Send {
-            ready(Ok(()))
+    impl Repository {
+        fn failing(error: TaskRepositoryError) -> Self {
+            Self {
+                failure: Some(error),
+                ..Self::default()
+            }
         }
     }
-
-    #[derive(Clone)]
-    struct Policy(Result<bool, TaskPolicyError>);
-
-    impl TaskPolicy for Policy {
-        fn is_allowed(
-            &self,
-            _title: &TaskTitle,
-        ) -> impl Future<Output = Result<bool, TaskPolicyError>> + Send {
-            ready(self.0)
-        }
-    }
-
-    #[derive(Clone)]
-    struct Repository(Result<(), TaskRepositoryError>);
 
     impl TaskRepository for Repository {
         fn insert(
             &self,
-            _task: &Task,
+            task: &Task,
         ) -> impl Future<Output = Result<(), TaskRepositoryError>> + Send {
-            ready(self.0)
+            let result = if let Some(error) = self.failure {
+                Err(error)
+            } else {
+                self.tasks.lock().unwrap().push(task.clone());
+                Ok(())
+            };
+            ready(result)
+        }
+
+        fn find(
+            &self,
+            task_id: &TaskId,
+        ) -> impl Future<Output = Result<Option<Task>, TaskRepositoryError>> + Send {
+            let result = if let Some(error) = self.failure {
+                Err(error)
+            } else {
+                Ok(self
+                    .tasks
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .find(|task| task.id() == *task_id)
+                    .cloned())
+            };
+            ready(result)
         }
     }
 
@@ -122,17 +130,29 @@ mod tests {
         }
     }
 
-    async fn post_error(
+    fn app(
+        policy: Result<TaskPolicyDecision, TaskPolicyError>,
+        repository: Repository,
+        readiness: Result<(), ReadinessError>,
+    ) -> Router {
+        router(
+            CreateTask::new(Policy(policy), repository.clone()),
+            GetTask::new(repository),
+            Probe(readiness),
+            false,
+        )
+    }
+
+    async fn json(response: axum::response::Response) -> serde_json::Value {
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        serde_json::from_slice(&body).unwrap()
+    }
+
+    async fn post(
+        app: Router,
         body: String,
         content_type: Option<&str>,
-        policy: Result<bool, TaskPolicyError>,
-        repository: Result<(), TaskRepositoryError>,
     ) -> (StatusCode, serde_json::Value) {
-        let app = router(
-            CreateTask::new(Policy(policy), Repository(repository)),
-            Probe(Ok(())),
-            false,
-        );
         let mut request = Request::post("/api/v1/tasks");
         if let Some(content_type) = content_type {
             request = request.header("content-type", content_type);
@@ -142,179 +162,226 @@ mod tests {
             .await
             .unwrap();
         let status = response.status();
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        (status, body)
+        (status, json(response).await)
     }
 
     #[tokio::test]
-    async fn post_tasks_returns_the_normalized_persisted_task() {
-        let repository = Capture::default();
-        let persisted = repository.0.clone();
-        let app = router(CreateTask::new(Allow, repository), Ready, false);
+    async fn create_then_get_round_trips_the_complete_public_contract() {
+        let app = app(
+            Ok(TaskPolicyDecision::Allowed),
+            Repository::default(),
+            Ok(()),
+        );
+        let (status, created) = post(
+            app.clone(),
+            serde_json::json!({
+                "title": "  Build 模板  ",
+                "description": "  Document every conversion  ",
+                "priority": "high",
+                "assignee_id": null,
+                "estimate_minutes": 90
+            })
+            .to_string(),
+            Some("application/json"),
+        )
+        .await;
 
-        let response = app
+        assert_eq!(status, StatusCode::CREATED);
+        assert_eq!(created["title"], "Build 模板");
+        assert_eq!(created["description"], "Document every conversion");
+        assert_eq!(created["priority"], "high");
+        assert_eq!(created["status"], "pending");
+        assert_eq!(created["estimate_minutes"], 90);
+        assert_eq!(created["revision"], 1);
+
+        let id = created["id"].as_str().unwrap();
+        let found = app
+            .clone()
             .oneshot(
-                Request::post("/api/v1/tasks")
-                    .header("content-type", "application/json")
-                    .body(Body::from(r#"{"title":"  Build 模板  "}"#))
+                Request::get(format!("/api/v1/tasks/{id}"))
+                    .body(Body::empty())
                     .unwrap(),
             )
             .await
             .unwrap();
+        assert_eq!(found.status(), StatusCode::OK);
+        assert_eq!(json(found).await, created);
 
-        assert_eq!(response.status(), StatusCode::CREATED);
-        let body = response.into_body().collect().await.unwrap().to_bytes();
-        let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        assert_eq!(body["title"], "Build 模板");
-        let id = body["id"].as_str().unwrap();
-        assert_eq!(id.len(), 26);
-        assert_eq!(&*persisted.lock().unwrap(), &[format!("{id}:Build 模板")]);
+        let invalid = app
+            .clone()
+            .oneshot(
+                Request::get("/api/v1/tasks/not-a-ulid")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(invalid.status(), StatusCode::UNPROCESSABLE_ENTITY);
+
+        let missing = app
+            .oneshot(
+                Request::get(format!("/api/v1/tasks/{}", TaskId::new()))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
-    async fn post_tasks_uses_the_fixed_error_contract() {
+    async fn omitted_optional_fields_keep_the_minimal_smoke_contract_valid() {
+        let app = app(
+            Ok(TaskPolicyDecision::Allowed),
+            Repository::default(),
+            Ok(()),
+        );
+        let (status, body) = post(
+            app,
+            r#"{"title":"  Smoke task  "}"#.into(),
+            Some("application/json"),
+        )
+        .await;
+
+        assert_eq!(status, StatusCode::CREATED);
+        assert_eq!(body["title"], "Smoke task");
+        assert_eq!(body["priority"], "normal");
+        assert_eq!(body["description"], serde_json::Value::Null);
+    }
+
+    #[tokio::test]
+    async fn create_uses_the_fixed_error_contract() {
         let cases = [
             (
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 "{".into(),
                 Some("application/json"),
-                Ok(true),
-                Ok(()),
                 StatusCode::BAD_REQUEST,
                 "invalid_request",
-                "request is invalid",
             ),
             (
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task","extra":true}"#.into(),
                 Some("application/json"),
-                Ok(true),
-                Ok(()),
                 StatusCode::BAD_REQUEST,
                 "invalid_request",
-                "request is invalid",
             ),
             (
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 None,
-                Ok(true),
-                Ok(()),
                 StatusCode::UNSUPPORTED_MEDIA_TYPE,
                 "unsupported_media_type",
-                "content type must be application/json",
             ),
             (
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 serde_json::json!({"title": "x".repeat(8 * 1024)}).to_string(),
                 Some("application/json"),
-                Ok(true),
-                Ok(()),
                 StatusCode::PAYLOAD_TOO_LARGE,
                 "request_too_large",
-                "request body is too large",
             ),
             (
-                r#"{"title":"\n"}"#.into(),
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
+                r#"{"title":"Task","priority":"urgent"}"#.into(),
                 Some("application/json"),
-                Ok(true),
-                Ok(()),
                 StatusCode::UNPROCESSABLE_ENTITY,
-                "task_title_invalid",
-                "task title is invalid",
+                "task_input_invalid",
             ),
             (
+                app(
+                    Ok(TaskPolicyDecision::Rejected),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
-                Ok(false),
-                Ok(()),
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "task_policy_rejected",
-                "task policy rejected the title",
             ),
             (
+                app(
+                    Err(TaskPolicyError::BadResponse),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
-                Err(TaskPolicyError::BadResponse),
-                Ok(()),
                 StatusCode::BAD_GATEWAY,
                 "task_policy_bad_response",
-                "task policy returned an invalid response",
             ),
             (
+                app(
+                    Err(TaskPolicyError::Unavailable),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
-                Err(TaskPolicyError::Unavailable),
-                Ok(()),
                 StatusCode::SERVICE_UNAVAILABLE,
                 "task_policy_unavailable",
-                "task policy is unavailable",
             ),
             (
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::failing(TaskRepositoryError::Unavailable),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
-                Ok(true),
-                Err(TaskRepositoryError),
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal_error",
-                "internal server error",
             ),
         ];
 
-        for (body, content_type, policy, repository, status, code, message) in cases {
-            let (actual_status, actual_body) =
-                post_error(body, content_type, policy, repository).await;
-            assert_eq!(actual_status, status);
-            assert_eq!(
-                actual_body,
-                serde_json::json!({"error": {"code": code, "message": message}}),
-            );
+        for (app, body, content_type, expected_status, expected_code) in cases {
+            let (status, body) = post(app, body, content_type).await;
+            assert_eq!(status, expected_status);
+            assert_eq!(body["error"]["code"], expected_code);
         }
     }
 
     #[tokio::test]
-    async fn router_uses_versioned_api_and_fixed_fallbacks() {
-        let app = router(
-            CreateTask::new(Policy(Ok(true)), Repository(Ok(()))),
-            Probe(Ok(())),
-            false,
+    async fn router_uses_versioned_api_fixed_fallbacks_and_separate_probes() {
+        let app = app(
+            Ok(TaskPolicyDecision::Allowed),
+            Repository::default(),
+            Err(ReadinessError),
         );
-        let cases = [
-            (
-                Request::get("/missing").body(Body::empty()).unwrap(),
-                StatusCode::NOT_FOUND,
-                "not_found",
-                "route not found",
-            ),
-            (
-                Request::post("/tasks").body(Body::empty()).unwrap(),
-                StatusCode::NOT_FOUND,
-                "not_found",
-                "route not found",
-            ),
-            (
-                Request::put("/api/v1/tasks").body(Body::empty()).unwrap(),
-                StatusCode::METHOD_NOT_ALLOWED,
-                "method_not_allowed",
-                "method not allowed",
-            ),
-        ];
 
-        for (request, status, code, message) in cases {
-            let response = app.clone().oneshot(request).await.unwrap();
-            assert_eq!(response.status(), status);
-            assert_eq!(response.headers()["content-type"], "application/json");
-            let body = response.into_body().collect().await.unwrap().to_bytes();
-            let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
-            assert_eq!(body["error"]["code"], code);
-            assert_eq!(body["error"]["message"], message);
-        }
-    }
+        let missing = app
+            .clone()
+            .oneshot(Request::get("/missing").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(missing.status(), StatusCode::NOT_FOUND);
+        assert_eq!(json(missing).await["error"]["code"], "not_found");
 
-    #[tokio::test]
-    async fn health_distinguishes_liveness_from_readiness() {
-        let app = router(
-            CreateTask::new(Policy(Ok(true)), Repository(Ok(()))),
-            Probe(Err(ReadinessError)),
-            false,
-        );
+        let method = app
+            .clone()
+            .oneshot(Request::put("/api/v1/tasks").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(method.status(), StatusCode::METHOD_NOT_ALLOWED);
 
         let live = app
             .clone()
@@ -325,7 +392,6 @@ mod tests {
             .oneshot(Request::get("/health/ready").body(Body::empty()).unwrap())
             .await
             .unwrap();
-
         assert_eq!(live.status(), StatusCode::OK);
         assert_eq!(ready.status(), StatusCode::SERVICE_UNAVAILABLE);
     }

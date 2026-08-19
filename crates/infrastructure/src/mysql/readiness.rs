@@ -21,7 +21,9 @@ impl ReadinessProbe for MySqlReadinessProbe {
             Span::enter_with_local_parent("mysql.ready").with_property(|| ("span.kind", "client"));
         tokio::time::timeout(
             self.timeout,
-            sqlx::query("SELECT 1").execute(&self.pool).in_span(span),
+            sqlx::query_scalar!("SELECT 1")
+                .fetch_one(&self.pool)
+                .in_span(span),
         )
         .await
         .map_err(|_| ReadinessError)?

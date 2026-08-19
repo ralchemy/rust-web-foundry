@@ -2,10 +2,14 @@
 
 This crate owns use cases, outbound Port traits, orchestration, and stable application error categories. Keep them under `use_cases/`, `ports/`, or `errors/`.
 
+Before adding or changing commands, results, conversion ownership, Port value types, or orchestration style, read `docs/guide/reference/idiomatic-rust.md`.
+
 - Depend only on `domain` inside the workspace.
 - Ports describe capabilities needed by use cases and expose no adapter/framework types.
 - Application commands, results, and Port methods use Domain or Application-owned types for every value with distinct business meaning, an invariant, a finite set, a unit, a trust distinction, or a risk of confusion with another value using the same primitive. Identity, state, authorization, routing, idempotency, validated input, time, and quantity are examples, not an exhaustive list. Free-form text and opaque external payloads that do not participate in business decisions may remain primitives; constrained text is a validated business type.
 - Do not expose HTTP, database, configuration, or downstream wire encodings through a Port. Convert them at the adapter that owns the encoding.
+- Application commands and results are explicit contracts. Do not return an Aggregate directly to an adapter when an Application-owned result should select the data approved for that boundary.
+- Port decisions use named enums or business types rather than ambiguous booleans.
 - Port methods must not provide default implementations that return `Unsupported`, `Unavailable`, or another placeholder error. An adapter either implements the declared interface or does not implement that Port.
 - A Port exposes only the coherent capability required by its callers. Split unrelated capabilities instead of forcing adapters to pretend to support them, but do not create one-method traits for hypothetical substitution.
 - When a use case promises atomicity or idempotency across related state changes, expose that consistency boundary as one coherent Port operation. Separate Port calls are valid only when partial completion is part of the defined semantics; orchestration alone cannot make independent adapter calls atomic. Never load or preflight a mutable Aggregate outside that Port operation and then treat it as authoritative inside the transaction.

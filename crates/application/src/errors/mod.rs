@@ -5,7 +5,10 @@ pub enum TaskPolicyError {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct TaskRepositoryError;
+pub enum TaskRepositoryError {
+    Unavailable,
+    CorruptRecord,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReadinessError;
@@ -17,3 +20,6 @@ pub enum CreateTaskError {
     PolicyBadResponse,
     Persistence,
 }
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct GetTaskError;
