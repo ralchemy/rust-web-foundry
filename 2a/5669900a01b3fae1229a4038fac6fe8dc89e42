@@ -1,0 +1,78 @@
+crates/http/src/routes/mod.rs
+  s_8c2cc0cb66e203::t_f6b28604298cd5 223
+TEMPLATE.md
+  s_7270a0aea3cee9::t_c73bac6fdaa9bf 8-9
+crates/infrastructure/src/mysql/repositories/task/conversions.rs
+  s_8c2cc0cb66e203::t_5582b8c7c9d9b3 95
+postmortem/2026-08-20-defer-ci-platform-proof.md
+  s_8499a280d4932e::t_7095af6faa6102 1-17
+CONTRIBUTING.md
+  s_7270a0aea3cee9::t_00f3fb810078a4 1-19
+cargo-generate.toml
+  s_589498085ccb0c::t_ffb7ded719fe56 7-8
+postmortem/2026-08-20-generate-governance-anchors.md
+  s_7270a0aea3cee9::t_473441e47734fd 1-18
+postmortem/2026-08-20-exclude-template-only-artifacts.md
+  s_589498085ccb0c::t_c7eab54e060efa 1-17
+README.md.liquid
+  s_7270a0aea3cee9::t_3e6760b3a1d429 51,67-70
+.github/workflows/template.yml
+  s_7270a0aea3cee9::t_caed1c7d850165 54-56,62-65
+  s_7270a0aea3cee9::t_9ee4c5bffa4508 66-67
+  s_589498085ccb0c::t_a7d1dae6be885b 68-69
+CONTRIBUTING.md.liquid
+  s_7270a0aea3cee9::t_e23f6e2bf3f068 1-13
+docs/guide/development.md
+  s_7270a0aea3cee9::t_48436936bc715d 26-42
+crates/domain/src/value_objects/task_id.rs
+  s_8c2cc0cb66e203::t_f4da9b1866e328 9,34
+CONTEXT.md
+  s_7270a0aea3cee9::t_97c8bd399ffd64 1-29
+README.md
+  s_7270a0aea3cee9::t_ed24b03db76196 86-87
+crates/domain/src/entities/task.rs
+  s_8c2cc0cb66e203::t_bb3ea9f402254f 42
+postmortem/2026-08-20-make-ci-delegate-to-the-complete-gate.md
+  s_8499a280d4932e::t_013ca4f1e95356 1-2,5-19
+  s_8499a280d4932e::t_d0fc81ed51d0ec 3-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2a5669900a01b3fae1229a4038fac6fe8dc89e42",
+  "prompts": {},
+  "sessions": {
+    "s_589498085ccb0c": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a01f37-ec2c-7b72-a4d1-ace0a29fcad7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    },
+    "s_7270a0aea3cee9": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a01f3b-d45a-7b06-b732-868dbbef5001",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    },
+    "s_8499a280d4932e": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a01f5f-cbaf-7853-94d6-338ca6185a44",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": null
+    },
+    "s_8c2cc0cb66e203": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a01f48-35a1-730f-8da5-af7362f442e6",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    }
+  }
+}
