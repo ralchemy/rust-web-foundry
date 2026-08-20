@@ -220,7 +220,7 @@ mod tests {
 
         let missing = app
             .oneshot(
-                Request::get(format!("/api/v1/tasks/{}", TaskId::new()))
+                Request::get(format!("/api/v1/tasks/{}", TaskId::generate()))
                     .body(Body::empty())
                     .unwrap(),
             )

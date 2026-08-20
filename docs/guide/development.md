@@ -23,14 +23,23 @@ Forward migrations use `YYYYMMDDNNN_information.sql`, such as `20260806001_drop-
 
 Generated CI runs `just ci` with MySQL 8.4 on the latest stable Rust selected by `rust-toolchain.toml`. It applies migrations before checking that `.sqlx/` matches the current schema and query macros. Template CI first generates a fresh service and then runs that generated CI path.
 
-Authority is intentionally split:
+Each kind of knowledge has one authority:
 
-- compiler, manifests, tests, Just, and CI enforce executable facts;
-- `AGENTS.md` files enforce durable ownership and safety rules and override optional agent-framework, extension, and Skill style defaults for repository work;
-- `.agents/skills/` provides optional, agent-supported procedures for recurring changes;
-- this Guide explains rationale and extension points.
+| Surface | Owns | Does not own |
+|---|---|---|
+| Source, tests, manifests, migrations, Just, and CI | Executable structure, behavior, and named quality-gate proof | Unimplemented product intent or semantic review |
+| [`CONTEXT.md`](../../CONTEXT.md) and on-demand Domain capability documents | Confirmed Domain language and durable capability semantics | Implementation details, working assumptions, or agent procedure |
+| Guide Baseline | Installed behavior, current technical contracts, rationale, and extension seams | Uninstalled options or project history |
+| Guide Reference | Conditional options, trade-offs, and safety boundaries | Claims that an optional capability is installed |
+| README | Positioning, first use, and a short public-command summary | Complete contribution, architecture, Domain, or acceptance policy |
+| `CONTRIBUTING.md` | Human entry point, change navigation, minimum evidence path, and authority links | Copies of the Guide, Project Rules, or testing policy |
+| Root and nested `AGENTS.md` | Agent reading order, triggers, local routing, stop conditions, and evidence handoff | Product or engineering knowledge unavailable to humans |
+| [`docs/agents/domain.md`](../agents/domain.md) | Framework-neutral Domain modeling outcomes and where to preserve them | Concrete business facts or Skill-specific procedure |
+| `.agents/skills/` | Optional procedures for recurring agent-supported work | New rules, uniquely mandatory knowledge, or a stable public interface |
+| `postmortem/` | Immutable historical reasons, trade-offs, and failed approaches | Current specification |
+| Wayfinder maps and tickets | Decision routes and target designs before implementation | Current generated-service behavior or product documentation |
 
-When behavior changes, update code/tests and user documentation together. Do not copy a rule into a Skill or turn optional Guide advice into an always-on requirement.
+When behavior changes, update its authority, public summaries or links, relevant tests, and the named gate together. Do not copy a rule into a Skill or turn optional Guide advice into an always-on requirement.
 
 ## AI-assisted workflow
 

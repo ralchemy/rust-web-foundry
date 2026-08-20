@@ -64,7 +64,7 @@ architecture:
 
 check: _check
 
-ci: _check _accept
+ci: _check _accept lifecycle
 
 verify:
     #!/usr/bin/env bash
@@ -81,6 +81,7 @@ verify:
     just ci
 
 _check: architecture
+    bash scripts/check-idiomatic-rust.sh
     cargo fmt --all -- --check
     cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
     cargo test --workspace --exclude "{{ project-name }}" --all-features --locked

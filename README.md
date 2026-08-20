@@ -83,6 +83,8 @@ The server does not run migrations automatically. Use the dedicated `migrate` co
 
 ## Documentation
 
+- [Contributing to the template](CONTRIBUTING.md)
+- [Task reference glossary](CONTEXT.md)
 - [Template usage and positioning](TEMPLATE.md)
 - [Generated-service README template](README.md.liquid)
 - [Guide](docs/guide/README.md)

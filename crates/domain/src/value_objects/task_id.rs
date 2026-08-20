@@ -6,7 +6,7 @@ use ulid::Ulid;
 pub struct TaskId(Ulid);
 
 impl TaskId {
-    pub fn new() -> Self {
+    pub fn generate() -> Self {
         Self(Ulid::generate())
     }
 }
@@ -31,7 +31,7 @@ mod tests {
 
     #[test]
     fn round_trips_the_canonical_text_representation() {
-        let id = TaskId::new();
+        let id = TaskId::generate();
 
         assert_eq!(id.to_string().parse::<TaskId>(), Ok(id));
     }

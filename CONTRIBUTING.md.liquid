@@ -1,0 +1,13 @@
+# Contributing
+
+## Before editing
+
+- Read the [Project Rules](AGENTS.md), the nearest nested `AGENTS.md` for every touched path, and the [Task reference glossary](CONTEXT.md).
+- Use the [Development guide](docs/guide/development.md) to find the authority for the change and its smallest evidence path.
+- Follow the [Domain workflow](docs/agents/domain.md) before changing business meaning and [Testing](docs/guide/testing.md) before changing test placement or public quality commands.
+
+## Make and verify the change
+
+Trace the existing public path, update the owning code and documentation together, and add the smallest test that would fail if the behavior regressed. Run the focused check while editing and `just check` before handoff. Run `just verify` when configuration, migrations, composition, lifecycle, or installed routes change.
+
+Report the focused checks, required complete gate, full diff review, documentation updates, and any residual risk. For a changed CI or public gate, record the old proof, new proof, and retained equivalent coverage separately.

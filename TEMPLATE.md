@@ -5,6 +5,8 @@ includes one real canonical Task creation path through HTTP, an outbound policy 
 This reference slice demonstrates the architecture and runtime contracts; it is not a universal
 task-management domain model and is not currently isolated behind an optional Cargo feature.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) before changing template or generated assets.
+
 Generate a service from this checkout:
 
 ```sh

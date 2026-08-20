@@ -92,7 +92,7 @@ mod tests {
 
     fn row() -> TaskRow {
         TaskRow {
-            id: TaskId::new().to_string(),
+            id: TaskId::generate().to_string(),
             title: "Persisted task".into(),
             description: Some("Reconstruct through Domain types".into()),
             priority: "normal".into(),

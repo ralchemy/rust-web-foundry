@@ -51,14 +51,24 @@ jobs:
           cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,mysql
       - name: Generate and verify
         run: |
+          test -f CONTEXT.md
+          test -f CONTRIBUTING.md
+          test -f CONTRIBUTING.md.liquid
           cargo generate --path . --name template-smoke --destination "$RUNNER_TEMP" --vcs none
           cd "$RUNNER_TEMP/template-smoke"
           test -f .github/workflows/ci.yml
           test "$(find crates -name Cargo.toml | wc -l)" -eq 4
           test -f app/Cargo.toml
+          test -f CONTEXT.md
+          test -f CONTRIBUTING.md
+          grep -Fq '(CONTRIBUTING.md)' README.md
+          grep -Fq '(docs/guide/development.md)' CONTRIBUTING.md
+          git init --quiet
+          ! git check-ignore -q CONTEXT.md
+          test ! -e postmortem
+          test ! -e docs/research
           if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"
             exit 1
           fi
-          bash scripts/check-idiomatic-rust.sh
           just ci

@@ -2,7 +2,6 @@
 .env
 /target/
 .scratch
-CONTEXT.md
 docs/adr/
 docs/agents/*
 !docs/agents/domain.md
