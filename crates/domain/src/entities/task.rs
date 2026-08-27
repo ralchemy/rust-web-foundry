@@ -39,7 +39,7 @@ pub struct TaskSnapshot {
 impl Task {
     pub fn create(input: NewTask) -> Self {
         Self {
-            id: TaskId::new(),
+            id: TaskId::generate(),
             title: input.title,
             description: input.description,
             priority: input.priority,

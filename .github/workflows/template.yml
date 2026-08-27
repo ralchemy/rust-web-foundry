@@ -52,6 +52,7 @@ jobs:
       - name: Generate and verify
         run: |
           template_root=$PWD
+          bash scripts/check-agent-context.sh
           cargo generate --path . --name template-smoke --destination "$RUNNER_TEMP" --vcs none
           cd "$RUNNER_TEMP/template-smoke"
           test -f .github/workflows/ci.yml
@@ -65,7 +66,15 @@ jobs:
             crates/domain/AGENTS.md
             crates/http/AGENTS.md
             crates/infrastructure/AGENTS.md
+            .agents/skills/add-endpoint/SKILL.md
+            .agents/skills/add-migration/SKILL.md
+            .agents/skills/ddd-discover/SKILL.md
+            .agents/skills/ddd-model-review/SKILL.md
+            .agents/skills/ddd-strategic-design/SKILL.md
+            .agents/skills/ddd-tactical-design/SKILL.md
+            .agents/skills/review-pr/SKILL.md
             docs/agents/domain.md
+            docs/agents/routed-context-budgets.tsv
             docs/guide/README.md
             docs/guide/app/configuration.md
             docs/guide/architecture/README.md
@@ -90,15 +99,18 @@ jobs:
             docs/guide/reference/typestate.md
             docs/guide/runtime.md
             docs/guide/security.md
+            scripts/check-agent-context.sh
           )
           for path in "${verbatim_governance_files[@]}"; do
             cmp -s "$template_root/$path" "$path"
           done
 
           for heading in \
+            '## Active-plan Context Set' \
             '## Design checkpoint' \
             '## Coherent implementation slices' \
             '## Governance and documentation changes' \
+            '## Routed-context budget' \
             '## Dependency selection'
           do
             grep -Fqx "$heading" docs/guide/development.md
@@ -125,8 +137,10 @@ jobs:
             cmp -s "$source" "$path"
           done < <(find "$template_root/postmortem" -type f -name '*.md' -print0)
           test -f postmortem/2026-08-27-progressive-disclosure-for-agent-rules.md
+          test -f postmortem/2026-08-27-harden-agent-context-routing.md
 
           test "$(wc -c < AGENTS.md)" -le 10000
+          bash scripts/check-agent-context.sh
           if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"
             exit 1
