@@ -6,7 +6,10 @@ This crate implements application Ports for MySQL and outbound HTTP. Keep SQLx c
 
 ## Context routing
 
-Changing a query, migration, transaction boundary, database row conversion, persistence reconstruction, or persistence error mapping → read `docs/guide/infrastructure/database.md`.
+Changing a fixed query, database row conversion, persistence reconstruction, or SQLx metadata → read `docs/guide/infrastructure/database.md#checked-queries`.
+Changing a migration or schema lifecycle → read `docs/guide/infrastructure/database.md#migration-lifecycle`.
+Changing a transaction or cross-system consistency boundary → read `docs/guide/infrastructure/database.md#transaction-boundaries`.
+Changing persistence error mapping or database verification → read `docs/guide/infrastructure/database.md#failures-and-verification`.
 Changing client spans, outbound propagation, dependency logging, or telemetry redaction → read `docs/guide/observability.md`.
 
 ## Adapter contract

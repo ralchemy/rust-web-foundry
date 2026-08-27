@@ -54,7 +54,7 @@ After changing a migration or checked query, start MySQL and run `just sqlx-prep
 
 | Command | Database contract |
 |---|---|
-| `just architecture` | Requires no running MySQL; checks the fixed workspace dependency direction, forbidden outer-framework dependencies in Domain and Application, and the objective multi-workflow threshold for top-level use-case files. It does not attempt to judge DDD ownership, type quality, naming, file placement, or other semantic module boundaries. |
+| `just architecture` | Requires no running MySQL; checks the fixed workspace dependency direction, forbidden outer-framework dependencies in Domain and Application, the objective multi-workflow threshold for top-level use-case files, Skill adoption of Context Pointers and Context Sets, anchored routing for every conditional owner at or above 7,500 bytes, and representative routed-context byte ceilings from `docs/agents/routed-context-budgets.tsv`. It does not attempt to judge DDD ownership, type quality, naming, file placement, or other semantic module boundaries. |
 | `just check` | Requires no running MySQL; runs `architecture`, format, Clippy, all DB-free unit/Router tests, and app library/binary tests. Clippy may compile the integration target but does not execute it. |
 | `just test` | Runs every workspace test and requires an existing MySQL at `TEST_DATABASE_URL` or the documented local default. |
 | `just ci` | Assumes MySQL already exists; runs `check`, the real integration test, explicit migration, SQLx metadata verification, live HTTP smoke, propagation, and graceful shutdown. |

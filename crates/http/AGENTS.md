@@ -8,8 +8,20 @@ This crate owns the Axum Router, handlers, DTOs, extractors, middleware, state, 
 
 Changing Router state, handler state extraction, request extensions, or dependency construction → read `docs/guide/http/state-management.md`.
 Changing routes, handlers, extractors, response DTOs, route-family composition, or Router fallbacks → read `docs/guide/http/routing-and-handlers.md`.
-Changing DTO validation, `axum-valid` rejection mapping, field-level public errors, or extractor body bounds → read `docs/guide/http/validation.md`.
-Adding or reordering a Layer, consuming bodies in middleware, or passing request-derived context → read `docs/guide/http/middleware.md`.
+Changing whether a rule belongs to transport validation or Domain construction → read `docs/guide/http/validation.md#do-not-duplicate-domain-invariants-on-dtos`.
+Adding or changing DTO validator rules or `axum-valid` rejection mapping → read `docs/guide/http/validation.md#use-axum-valid-for-transport-dtos`.
+Changing field-level public errors or the fixed validation envelope → read `docs/guide/http/validation.md#keep-the-public-error-contract-stable`.
+Changing extractor body bounds or whether the shared JSON limit applies → read `docs/guide/http/validation.md#reference-path-createtask`.
+Adding or reordering a Layer → read `docs/guide/http/middleware.md#installed-stack`.
+Adding local middleware, consuming bodies in middleware, passing request-derived context, or introducing a fallible Layer → read `docs/guide/http/middleware.md#choose-the-smallest-middleware-shape`.
+Adding alternative HTTP tracing → read `docs/guide/http/middleware.md#alternative-http-tracing`.
+Adding response compression → read `docs/guide/http/middleware.md#response-compression`.
+Adding request IDs → read `docs/guide/http/middleware.md#request-ids`.
+Adding a request deadline or handler timeout → read `docs/guide/http/middleware.md#deadlines-and-timeouts`.
+Adding CORS → read `docs/guide/http/middleware.md#explicit-cors`.
+Adding authentication middleware or request identity → read `docs/guide/http/middleware.md#authentication-and-request-identity`.
+Adding rate limiting → read `docs/guide/http/middleware.md#rate-limiting`.
+Adding sessions, cookies, or CSRF handling → read `docs/guide/http/middleware.md#sessions-cookies-and-csrf`.
 Changing request trace extraction, span attributes, error marking, health-span policy, or telemetry redaction → read `docs/guide/observability.md`.
 
 ## Public adapter contract

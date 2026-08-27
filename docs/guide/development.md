@@ -27,6 +27,33 @@ The [Guide authority hierarchy](README.md#authority) defines which surface owns 
 
 When behavior changes, update code/tests and user documentation together. Keep each mandatory rule with its single repository owner rather than copying it into a Skill or prompt.
 
+## Active-plan Context Set
+
+When a task loads any conditional owner, keep a lightweight Context Set in the active issue or plan. It is a read ledger and routing input, not a summary or second authority.
+
+```yaml
+context_set:
+  scope_version: 1
+  planned_paths:
+    - crates/http/src/routes/tasks.rs
+  matched_branches:
+    - changing routes or route-family composition
+  standing:
+    - ref: AGENTS.md
+      content_sha: <git-hash-object>
+    - ref: crates/http/AGENTS.md
+      content_sha: <git-hash-object>
+  owners:
+    - ref: docs/guide/http/routing-and-handlers.md
+      content_sha: <git-hash-object>
+      reason: changing route-family composition
+      loaded: true
+```
+
+Use `git hash-object <path>` for `content_sha`, so the ledger detects both committed and working-tree content. A `ref` is a repository-relative path with an optional Markdown anchor. Keep only identity, selection reason, and loaded state; do not paste owner prose into the plan.
+
+Before reading, reuse an entry with the same `ref@content_sha`. Increment `scope_version`, rematch root plus nearest-local Pointers, and add only newly selected owners when a planned or touched path, action branch, or content SHA changes. A subagent or reviewer receives the task goal, relevant evidence, and this Context Set instead of the entire discovery transcript. A Context Set never proves that an omitted owner is irrelevant; the root/local Pointer union remains the completeness rule.
+
 ## Design checkpoint
 
 Before production implementation that adds or changes a public workflow, Domain behavior, Port, database schema or index, persistence contract, or external integration, record a short checkpoint in the active issue or plan:
@@ -48,7 +75,7 @@ Continue automatically after a stable boundary passes. Stop only when a material
 
 ## Governance and documentation changes
 
-Changing `AGENTS.md`, Guide authority, Context Pointer routing, or a generated governance check requires Governance or Documentation scope declared by the active issue or specification. That scope must provide an exact changed-path allowlist and map every rule move to its current owner and stable clause key before the first repository edit. Ordinary implementation treats these documents as read-only; if it discovers an owner gap or needs an undeclared path, stop and request the smallest scope decision instead of editing the contract opportunistically.
+Changing `AGENTS.md`, Guide authority, Context Pointer routing, a routed-context budget, or a generated governance check requires Governance or Documentation scope declared by the active issue or specification. That scope must provide an exact changed-path allowlist and map every rule move to its current owner and stable clause key before the first repository edit. Ordinary implementation treats these documents as read-only; if it discovers an owner gap or needs an undeclared path, stop and request the smallest scope decision instead of editing the contract opportunistically.
 
 Review the complete diff of every changed owner. Account for each changed path against the allowlist and each moved clause against one complete canonical owner; a pointer, optional procedure, postmortem, or executable check is not a second prose owner. Preserve business, architecture, dependency, runtime, transport, persistence, and named-gate semantics unless the declared scope explicitly changes one of them.
 
@@ -58,29 +85,38 @@ This section is the canonical location for the frozen UTF-8 byte sizes of the si
 
 | Metric | Bytes |
 |---|---:|
-| `AGENTS.md` | 6,920 |
+| `AGENTS.md` | 9,934 |
 | `app/AGENTS.md` | 1,853 |
 | `crates/domain/AGENTS.md` | 1,882 |
 | `crates/application/AGENTS.md` | 3,201 |
-| `crates/http/AGENTS.md` | 3,860 |
-| `crates/infrastructure/AGENTS.md` | 2,833 |
-| Six-file aggregate | 20,549 |
-| `AGENTS.md` + `app/AGENTS.md` | 8,773 |
-| `AGENTS.md` + `crates/domain/AGENTS.md` | 8,802 |
-| `AGENTS.md` + `crates/application/AGENTS.md` | 10,121 |
-| `AGENTS.md` + `crates/http/AGENTS.md` | 10,780 |
-| `AGENTS.md` + `crates/infrastructure/AGENTS.md` | 9,753 |
+| `crates/http/AGENTS.md` | 5,219 |
+| `crates/infrastructure/AGENTS.md` | 3,190 |
+| Six-file aggregate | 25,279 |
+| `AGENTS.md` + `app/AGENTS.md` | 11,787 |
+| `AGENTS.md` + `crates/domain/AGENTS.md` | 11,816 |
+| `AGENTS.md` + `crates/application/AGENTS.md` | 13,135 |
+| `AGENTS.md` + `crates/http/AGENTS.md` | 15,153 |
+| `AGENTS.md` + `crates/infrastructure/AGENTS.md` | 13,124 |
 
 A later change requires Governance review only when a frozen metric grows by both more than 5% and more than 256 bytes; the review explains why the added content must remain standing or why a Context Pointer cannot own it. The threshold is a review warning, not an automatic rejection. The root standing brief must remain at or below 10,000 bytes.
+
+## Routed-context budget
+
+Standing-brief size alone does not measure the context an agent actually loads. `docs/agents/routed-context-budgets.tsv` defines representative workflows as the union of full standing briefs and anchored conditional-owner sections. `scripts/check-agent-context.sh` resolves each Markdown anchor, counts every unique source once, and rejects a scenario above its byte ceiling.
+
+The budgets are regression ceilings, not instructions to preload every listed source. A scenario represents a repeated task shape; the real task still loads only matched branches. When a ceiling would grow, first shorten standing protection, split a broad Pointer, or move explanation behind a narrower anchor. Raising a ceiling requires Governance scope and a review of the scenario's selected sources and current measured bytes.
+
+The same check also requires every repository Skill to use Context Pointers and a Context Set. It discovers conditional owners at or above 7,500 UTF-8 bytes and rejects any standing brief or Skill that references one without an anchor. `just architecture` runs it without MySQL, so generated services retain both the routing protocol and its budget.
 
 ## AI-assisted workflow
 
 Give an agent the smallest authoritative context for the change, independent of its orchestration framework:
 
-1. read root and the nearest `AGENTS.md` for every touched path; do not assume descendant rules were loaded automatically;
-2. trace the existing public path and read each matched canonical owner once;
-3. use a repository Skill when supported and applicable, otherwise produce the same repository-defined outcome directly;
-4. implement coherent slices and run the owning checks.
+1. read root and the nearest `AGENTS.md` for every planned touched path; do not assume descendant rules were loaded automatically;
+2. match the Pointer union, record or reuse the active-plan Context Set, and read each selected `ref@content_sha` once;
+3. trace the existing public path, rerouting only when the touched paths or action branches expand;
+4. use a repository Skill when supported and applicable, otherwise produce the same repository-defined outcome directly;
+5. implement coherent slices and run the owning checks.
 
 Do not paste the entire Guide into a prompt or copy its explanations into standing briefs.
 

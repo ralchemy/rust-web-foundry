@@ -61,6 +61,7 @@ architecture:
         exit 1
       fi
     done < <(find crates/application/src/use_cases -maxdepth 1 -type f -name '*.rs' ! -name 'mod.rs' -print)
+    bash scripts/check-agent-context.sh
 
 check: _check
 
