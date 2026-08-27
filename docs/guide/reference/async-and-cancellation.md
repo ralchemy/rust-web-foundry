@@ -6,7 +6,7 @@
 >
 > **Read when:** Adding `tokio::spawn`, `spawn_blocking`, `select!`, `join!`, a timeout around mutating work, a channel loop, periodic work, a background job, a lock across async code, or another long-lived subsystem.
 >
-> **Authority:** The root cancellation Project Rules and App lifecycle rules override optional patterns in this chapter.
+> **Authority:** When a Context Pointer matches, this chapter is the conditional async and cancellation contract. Source, tests, and gates own executable facts; root and nearest-local rules retain the standing trigger, scope responsibility, and local hard protection.
 
 Dropping an incomplete Future is cancellation. Rust cleans up its owned values, but external effects that already happened—bytes sent, a downstream request accepted, or a database transaction committed—are not undone automatically.
 

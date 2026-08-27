@@ -1,6 +1,18 @@
 # Guide
 
-This Guide has two parts: the Baseline explains decisions embodied by the generated service, while Development Reference chapters preserve conditional Rust Web knowledge for extending it. Cargo, code, tests, CI, Project Rules, and Just recipes remain authoritative.
+This Guide has two parts: the Baseline explains decisions embodied by the generated service, while Development Reference chapters preserve conditional Rust Web knowledge for extending it.
+
+## Authority
+
+Repository authority is layered by what each surface owns:
+
+1. source, manifests, tests, Just recipes, and CI own executable facts about installed behavior;
+2. root and nearest-local `AGENTS.md` files own standing governance, instruction discovery, scope responsibility, and retained hard protection;
+3. [`docs/agents/domain.md`](../agents/domain.md) owns the framework-neutral Domain workflow outcomes;
+4. a Guide or Reference chapter reached through a matching action-first Context Pointer owns that conditional engineering contract; and
+5. Skills provide optional procedures and never replace a mandatory repository outcome.
+
+Ordinary implementation treats Guide contracts as read-only. Modify a Guide or its authority routing only when the active issue or specification explicitly declares Governance or Documentation scope.
 
 ## Guiding principles
 
@@ -14,7 +26,7 @@ This Guide has two parts: the Baseline explains decisions embodied by the genera
 
 ## How to use this Guide
 
-Read the Baseline chapter for the responsibility being changed. Project Rules define required constraints, Skills define recurring procedures, and trigger lines in `AGENTS.md` point to a Development Reference only when the task creates that concern. The Guide is not a mandatory linear tutorial.
+Read the Baseline chapter for the responsibility being changed. Context Pointers in root and nearest-local standing briefs identify conditional chapters for the changed seam. The Guide is not a mandatory linear tutorial.
 
 ## Baseline
 

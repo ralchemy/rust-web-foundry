@@ -2,8 +2,7 @@
 
 > **Status:** Generated-service code contract
 >
-> **Authority:** Source code, tests, Clippy, architecture checks, and applicable `AGENTS.md`
-> files override examples in this chapter.
+> **Authority:** When a Context Pointer matches, this chapter owns the conditional shared Rust code contract. Source, tests, Clippy, and architecture checks own executable facts; root and nearest-local rules retain standing scope responsibility and local hard protection.
 
 This chapter defines the Rust vocabulary that the generated service and coding agents use by
 default. It constrains durable code outcomes rather than depending on a particular AI agent,
@@ -11,10 +10,9 @@ prompting framework, or editor integration.
 
 ## Model semantic differences, not directory symmetry
 
-Create a distinct type when a value has a different business meaning, invariant, finite set, unit,
-trust level, representation, lifecycle, or risk of being confused with another value. Do not copy a
-struct mechanically into HTTP, Application, Domain, Infrastructure, and database modules merely to
-make every layer look symmetric.
+Create a distinct Domain or Application type when a value has different business meaning, an invariant, a finite set, a unit, a trust distinction, a representation, a lifecycle, or a risk of same-primitive confusion. Swappable same-primitive arguments, directly constructible invalid values, or validation, string comparison, and unit conversion repeated by callers are evidence that the owning type is missing.
+
+Free-form human text, descriptions, reasons, display-only values, and genuinely opaque external payloads may remain primitives when they have no independent invariant and do not participate in business decisions. Human text with a non-blank, bounded, normalized, or other business invariant follows the [Domain modeling contract](../domain/modeling.md) and is owned by a validating business type. Do not add a wrapper when a value has no independent meaning or invariant.
 
 The canonical Task slice therefore has separate types for real boundaries:
 
@@ -26,13 +24,13 @@ The canonical Task slice therefore has separate types for real boundaries:
 | `TaskRow` | MySQL adapter | selected database representation |
 | `PolicyRequestWire`, `PolicyResponseWire` | outbound HTTP adapter | downstream protocol |
 
-A type is not required when the contract and semantics are already identical. Type safety should
-make invalid states and accidental substitutions difficult, not produce ceremonial wrappers.
+A type is not required when the contract and semantics are already identical. Type safety should make invalid states and accidental substitutions difficult, not produce ceremonial wrappers. Do not copy a struct mechanically into HTTP, Application, Domain, Infrastructure, and database modules merely to make every layer look symmetric.
+
+Keep HTTP DTOs, database rows, and downstream wire types private to their owning adapters. Convert raw transport, persistence, configuration, and downstream values at the adapter that owns that representation. Once a Domain or Application value exists, pass that type inward rather than reducing it to a primitive and reconstructing it later. Its owning type defines parsing, validation, and formatting; callers do not repeat those rules. Prefer enums and explicit transitions to boolean flag combinations and string comparisons.
 
 ## Use the standard conversion vocabulary
 
-- Implement `FromStr` for a stable textual representation. Call it through `str::parse` at the
-  boundary that owns the raw text.
+- Implement `FromStr` for a stable textual representation and `Display` for its canonical outward form. Call parsing through `str::parse` at the boundary that owns the raw text.
 - Implement `TryFrom` for a fallible DTO, database-row, configuration, or downstream-wire
   conversion.
 - Implement `From` only when conversion cannot fail and preserves the complete target contract.
@@ -45,7 +43,7 @@ make invalid states and accidental substitutions difficult, not produce ceremoni
 - Do not add public `to_domain`, `into_domain`, `from_row`, or `to_response` methods when a standard
   conversion trait expresses the same operation.
 
-Before implementing a changed public path, record this conversion matrix in the design checkpoint:
+Use this matrix when recording changed conversion seams in the [design checkpoint](../development.md#design-checkpoint):
 
 | Source | Target | Mechanism | Owner | Failure owner |
 |---|---|---|---|---|
@@ -74,8 +72,9 @@ Before implementing a changed public path, record this conversion matrix in the 
   extraction.
 - Use `new` for an unsurprising primary construction. Use semantic names such as `create`,
   `reconstitute`, `parse`, `connect`, or `open` when behavior differs.
-- Name business types with Domain nouns and operations with Domain verb phrases. Do not let CRUD or
-  framework vocabulary replace the ubiquitous language.
+- Name business types with Domain nouns and operations with Domain verb phrases. Name booleans as predicates and collections with plural nouns.
+- Do not use placeholder names such as `data`, `info`, `obj`, `tmp`, `x`, `v`, `r`, or `a` for business values. Conventional short names are acceptable only when their meaning is obvious in a tiny local scope.
+- Do not let CRUD or framework vocabulary replace the ubiquitous language.
 
 ## Keep control flow readable
 

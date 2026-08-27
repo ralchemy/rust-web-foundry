@@ -51,11 +51,82 @@ jobs:
           cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,mysql
       - name: Generate and verify
         run: |
+          template_root=$PWD
           cargo generate --path . --name template-smoke --destination "$RUNNER_TEMP" --vcs none
           cd "$RUNNER_TEMP/template-smoke"
           test -f .github/workflows/ci.yml
           test "$(find crates -name Cargo.toml | wc -l)" -eq 4
           test -f app/Cargo.toml
+
+          verbatim_governance_files=(
+            AGENTS.md
+            app/AGENTS.md
+            crates/application/AGENTS.md
+            crates/domain/AGENTS.md
+            crates/http/AGENTS.md
+            crates/infrastructure/AGENTS.md
+            docs/agents/domain.md
+            docs/guide/README.md
+            docs/guide/app/configuration.md
+            docs/guide/architecture/README.md
+            docs/guide/architecture/error-handling.md
+            docs/guide/architecture/ports-and-adapters.md
+            docs/guide/architecture/project-structure.md
+            docs/guide/development.md
+            docs/guide/domain/modeling.md
+            docs/guide/http/middleware.md
+            docs/guide/http/routing-and-handlers.md
+            docs/guide/http/state-management.md
+            docs/guide/http/validation.md
+            docs/guide/infrastructure/database.md
+            docs/guide/observability.md
+            docs/guide/reference/async-and-cancellation.md
+            docs/guide/reference/authentication-and-authorization.md
+            docs/guide/reference/deployment.md
+            docs/guide/reference/grpc.md
+            docs/guide/reference/idiomatic-rust.md
+            docs/guide/reference/outbound-http.md
+            docs/guide/reference/performance.md
+            docs/guide/reference/typestate.md
+            docs/guide/runtime.md
+            docs/guide/security.md
+          )
+          for path in "${verbatim_governance_files[@]}"; do
+            cmp -s "$template_root/$path" "$path"
+          done
+
+          for heading in \
+            '## Design checkpoint' \
+            '## Coherent implementation slices' \
+            '## Governance and documentation changes' \
+            '## Dependency selection'
+          do
+            grep -Fqx "$heading" docs/guide/development.md
+          done
+
+          grep -Fq '{{ project-name }}' "$template_root/docs/guide/testing.md"
+          grep -Fq 'template-smoke' docs/guide/testing.md
+          ! grep -Fq '{{ project-name }}' docs/guide/testing.md
+
+          while IFS= read -r -d '' source; do
+            path=${source#"$template_root/"}
+            test -f "${path%.liquid}"
+            test ! -e "$path"
+          done < <(find "$template_root" -type f -name '*.liquid' -print0)
+
+          for path in cargo-generate.toml TEMPLATE.md .scratch .github/workflows/template.yml; do
+            test ! -e "$path"
+          done
+          grep -Fxq '# template-smoke' README.md
+          ! grep -Fq 'Primary design reference: Bulletproof Rust Web' README.md
+
+          while IFS= read -r -d '' source; do
+            path=${source#"$template_root/"}
+            cmp -s "$source" "$path"
+          done < <(find "$template_root/postmortem" -type f -name '*.md' -print0)
+          test -f postmortem/2026-08-27-progressive-disclosure-for-agent-rules.md
+
+          test "$(wc -c < AGENTS.md)" -le 10000
           if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"
             exit 1

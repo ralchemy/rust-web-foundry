@@ -23,28 +23,66 @@ Forward migrations use `YYYYMMDDNNN_information.sql`, such as `20260806001_drop-
 
 Generated CI runs `just ci` with MySQL 8.4 on the latest stable Rust selected by `rust-toolchain.toml`. It applies migrations before checking that `.sqlx/` matches the current schema and query macros. Template CI first generates a fresh service and then runs that generated CI path.
 
-Authority is intentionally split:
+The [Guide authority hierarchy](README.md#authority) defines which surface owns each kind of fact or contract. Tracked `CONTEXT.md`, `docs/adr/`, Domain, and Guide documents are repository artifacts at their declared authority level. Ignored `.scratch/` files, local agent configuration, generated stage reports, and ignored `CONTEXT.md`, `docs/adr/`, or `docs/agents/` files are working material, not repository contracts; promote confirmed durable knowledge to its tracked owner instead of relying on an ignored artifact.
 
-- compiler, manifests, tests, Just, and CI enforce executable facts;
-- `AGENTS.md` files enforce durable ownership and safety rules and override optional agent-framework, extension, and Skill style defaults for repository work;
-- `.agents/skills/` provides optional, agent-supported procedures for recurring changes;
-- this Guide explains rationale and extension points.
+When behavior changes, update code/tests and user documentation together. Keep each mandatory rule with its single repository owner rather than copying it into a Skill or prompt.
 
-When behavior changes, update code/tests and user documentation together. Do not copy a rule into a Skill or turn optional Guide advice into an always-on requirement.
+## Design checkpoint
+
+Before production implementation that adds or changes a public workflow, Domain behavior, Port, database schema or index, persistence contract, or external integration, record a short checkpoint in the active issue or plan:
+
+- **Type map:** identify every value with distinct business meaning, an invariant, a finite set, a unit, a trust distinction, or a risk of same-primitive confusion, and name its Domain or Application owner. Review identity, state, authorization, routing, idempotency, validated input, time, and quantity where applicable.
+- **Conversion seams:** state where raw HTTP, database, configuration, and downstream values become Domain or Application types and where they are serialized again. For every changed boundary, record source type, target type, mechanism, conversion owner, and failure owner.
+- **Interface:** name the module that owns the workflow and the smallest interface callers need. Record why inseparable operations remain together when splitting them would add only forwarding glue.
+- **Acceptance path:** name the public path and the smallest test that proves the behavior.
+
+Documentation-only, message-only, and small expectation-only changes do not require this checkpoint. Update the checkpoint when evidence changes the design; do not repeat or re-read it mechanically at every task boundary. Before handoff, reconcile every named interface, module, conversion seam, and acceptance path with the actual code and executable evidence.
+
+## Coherent implementation slices
+
+Implement a confirmed multi-task design in dependency order, grouping interface-coupled work into the smallest coherent buildable slice. A cross-layer signature change may be edited across its owning layers before that slice compiles.
+
+At each stable slice boundary, run the smallest focused check that can expose a broken contract. Do not require full acceptance or a conformance audit for every internal task, and do not add public abstractions, unused wiring, placeholders, or compatibility scaffolding merely to make an intermediate task appear complete.
+
+Continue automatically after a stable boundary passes. Stop only when a material business decision is unresolved, required authority or external access is missing, or no remaining task can progress independently; report the exact blocker and the evidence already completed.
+
+## Governance and documentation changes
+
+Changing `AGENTS.md`, Guide authority, Context Pointer routing, or a generated governance check requires Governance or Documentation scope declared by the active issue or specification. That scope must provide an exact changed-path allowlist and map every rule move to its current owner and stable clause key before the first repository edit. Ordinary implementation treats these documents as read-only; if it discovers an owner gap or needs an undeclared path, stop and request the smallest scope decision instead of editing the contract opportunistically.
+
+Review the complete diff of every changed owner. Account for each changed path against the allowlist and each moved clause against one complete canonical owner; a pointer, optional procedure, postmortem, or executable check is not a second prose owner. Preserve business, architecture, dependency, runtime, transport, persistence, and named-gate semantics unless the declared scope explicitly changes one of them.
+
+### Standing-brief size review
+
+This section is the canonical location for the frozen UTF-8 byte sizes of the six standing briefs and their root-plus-nearest-local totals. The values below are frozen after the six-file routing migration:
+
+| Metric | Bytes |
+|---|---:|
+| `AGENTS.md` | 6,920 |
+| `app/AGENTS.md` | 1,853 |
+| `crates/domain/AGENTS.md` | 1,882 |
+| `crates/application/AGENTS.md` | 3,201 |
+| `crates/http/AGENTS.md` | 3,860 |
+| `crates/infrastructure/AGENTS.md` | 2,833 |
+| Six-file aggregate | 20,549 |
+| `AGENTS.md` + `app/AGENTS.md` | 8,773 |
+| `AGENTS.md` + `crates/domain/AGENTS.md` | 8,802 |
+| `AGENTS.md` + `crates/application/AGENTS.md` | 10,121 |
+| `AGENTS.md` + `crates/http/AGENTS.md` | 10,780 |
+| `AGENTS.md` + `crates/infrastructure/AGENTS.md` | 9,753 |
+
+A later change requires Governance review only when a frozen metric grows by both more than 5% and more than 256 bytes; the review explains why the added content must remain standing or why a Context Pointer cannot own it. The threshold is a review warning, not an automatic rejection. The root standing brief must remain at or below 10,000 bytes.
 
 ## AI-assisted workflow
 
 Give an agent the smallest authoritative context for the change, independent of its orchestration framework:
 
-1. read root and the nearest `AGENTS.md` for every touched path plus `CONTEXT.md`; do not assume descendant rules were loaded automatically;
-2. trace the existing public path and read its Baseline chapter;
-3. follow a trigger into Development Reference only when the change creates that concern;
-4. use a repository Skill when the active agent supports it and the work matches; otherwise follow the same documented outcome directly;
-5. implement the smallest coherent buildable slice and run the owning check; produce the evidence-backed rule-conformance review once at handoff.
+1. read root and the nearest `AGENTS.md` for every touched path; do not assume descendant rules were loaded automatically;
+2. trace the existing public path and read each matched canonical owner once;
+3. use a repository Skill when supported and applicable, otherwise produce the same repository-defined outcome directly;
+4. implement coherent slices and run the owning checks.
 
-For a confirmed multi-task design, follow dependencies while grouping interface-coupled tasks into the smallest buildable slice. Run focused checks at stable boundaries and the complete required checks at handoff. Continue automatically; ask the user only for a material unresolved business decision, missing authority, or external access that blocks all remaining independent work.
-
-Do not paste the entire Guide into a prompt or copy its explanations into Project Rules. When an agent repeats a mistake, place the correction with its single owner: executable behavior in code/tests, a universal constraint in the applicable `AGENTS.md`, an optional repeated procedure in a Skill, or conditional rationale in Reference. No mandatory rule may live only in a framework-specific prompt or Skill, and a framework's completion signal is not evidence that Project Rules passed. This keeps future context precise without turning one conversation into hidden project policy.
+Do not paste the entire Guide into a prompt or copy its explanations into standing briefs.
 
 ## Dependency selection
 
@@ -74,4 +112,4 @@ These are symptoms of responsibility drift in this workspace:
 - detached production tasks, unbounded channels, or retries without lifecycle and idempotency contracts;
 - `common`, `utils`, pass-through wrappers, or a trait with one speculative implementation.
 
-Fix the owning boundary rather than compensating at callers. The linked Baseline or Reference chapter explains the trade-off; Project Rules and public tests define the required result.
+Fix the owning boundary rather than compensating at callers. A matched Guide chapter owns the conditional contract, standing briefs retain path protection, and source plus public tests own executable facts.

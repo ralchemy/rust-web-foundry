@@ -10,9 +10,9 @@ MySQL constraints are the final persistence boundary. The Task table keeps its I
 
 ## Checked queries
 
-Use `query!` for statements and anonymous result records. Use `query_as!` when returned columns should populate an infrastructure-owned row type. Do not map SQL rows directly into Domain entities: reconstruct Domain values through their constructors so stored data cannot bypass current invariants.
+Use `query!` for statements and anonymous result records. Use `query_as!` when returned columns should populate an infrastructure-owned row type. Do not map SQL rows directly into Domain entities: reconstruct Domain values through their constructors so stored data cannot bypass current invariants. A read-only query may select only the needed columns and map its private typed row directly to an Application projection; it need not load an Aggregate or an unused large field.
 
-The macros validate SQL, parameter count and types, and returned column shapes against a real MySQL schema. They do not make dynamic SQL safe by themselves. Values must still be passed as bound parameters. Table names, column names, sort directions, and other SQL syntax cannot be bound; select them from an explicit allowlist rather than accepting arbitrary input.
+The macros validate SQL, parameter count and types, and returned column shapes against a real MySQL schema. They do not make dynamic SQL safe by themselves. Values must still be passed as bound parameters. Table names, column names, sort directions, and other SQL syntax cannot be bound; select them from an explicit allowlist rather than accepting arbitrary input. Use runtime query construction only when the query shape is genuinely dynamic. Record the reason beside the construction and test its parameterization and result mapping.
 
 Normal builds read committed metadata from `.sqlx/`. `.cargo/config.toml` sets `SQLX_OFFLINE=true`, so an ambient `DATABASE_URL` cannot unexpectedly turn compilation into a database operation. After changing a checked query or migration:
 

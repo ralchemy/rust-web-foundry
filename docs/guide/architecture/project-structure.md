@@ -1,6 +1,6 @@
 # Project structure
 
-The generated service uses one fixed Cargo workspace. Its crates establish architectural boundaries; responsibility directories inside each crate make the owner of a change predictable.
+The generated service uses one fixed Cargo workspace. Keep the four architecture crates under `crates/` and the executable host at root `app/`; introduce `apps/` only when a second real executable host exists. Responsibility directories inside each crate make the owner of a change predictable.
 
 ```text
 app/                         # composition, configuration, lifecycle
@@ -25,7 +25,7 @@ crates/
     └── outbound_http/
 ```
 
-Cargo manifests enforce the inward dependency graph. Inside a crate, Rust visibility provides the next boundary: keep implementation details private and expose only the types and operations another crate needs.
+Cargo manifests enforce the inward dependency graph. Inside a crate, Rust visibility provides the next boundary. Prefer a deep module that hides substantial behavior behind the smallest useful interface; keep implementation details private and expose only the types and operations another crate needs.
 
 Place new behavior with the responsibility that owns it:
 
@@ -35,11 +35,11 @@ Place new behavior with the responsibility that owns it:
 - concrete MySQL and reqwest behavior stays with its infrastructure adapter;
 - process construction and lifecycle stay in root `app/`, with `main.rs` remaining a thin call into the library path used by integration tests.
 
-A feature touches only the layers its behavior requires. Reuse an existing responsibility directory before adding another one, and create a directory only when a distinct current responsibility needs an owner. Do not add `shared`, `common`, `utils`, empty feature trees, or placeholders for anticipated adapters.
+A feature touches only the layers its behavior requires. Reuse an existing responsibility directory before adding another one, and create a directory only when a distinct current responsibility needs an owner. Do not add `shared`, `common`, `utils`, `helpers`, empty feature trees, or placeholders for anticipated adapters. Until a coherent owner exists, a few duplicated lines are preferable to an ownerless bucket.
 
 ## Grow a file into a directory module
 
-Start a responsibility in one file when only one workflow is known. When it grows another independently named workflow, promote the file to a directory module. When a confirmed design already contains several related workflows, create the capability directory from the start rather than adding several top-level command files. For example, a complex Application workflow may grow from `permission_requests.rs` into:
+Start a responsibility in one file when only one workflow is known. Promote it to a directory module when it gains a second related workflow that can evolve or be tested independently. When a confirmed design already contains two or more such workflows, create one capability directory from the start rather than several top-level command files. For example, an Application workflow may grow from `permission_requests.rs` into:
 
 ```text
 crates/application/src/use_cases/permission_requests/
@@ -49,9 +49,9 @@ crates/application/src/use_cases/permission_requests/
 └── revoke.rs
 ```
 
-Keep `mod.rs` as the small module interface: declare private child modules and expose only what callers need. Each child owns a complete workflow, including its input, result, orchestration, and focused tests. Do not leave the implementation in `mod.rs` or extract child modules that only forward calls.
+Keep `mod.rs` as the module interface: declare private child modules and expose only the types callers need. Each child owns a complete workflow, including its input, result, orchestration, and focused tests. Do not leave behavior in `mod.rs` or create pass-through child modules.
 
-Split each crate by the responsibility it owns rather than copying the same tree through every layer:
+Split only at a complete workflow, Domain rule, external adapter, transaction boundary, or lifecycle owner. Each crate follows the responsibility it owns rather than copying the same tree through every layer:
 
 | Crate | Useful split boundary |
 | --- | --- |
@@ -59,8 +59,11 @@ Split each crate by the responsibility it owns rather than copying the same tree
 | Application | complete command or coherent query group |
 | HTTP | public interaction or route family |
 | Infrastructure | implemented Port, transaction boundary, or external system |
+| App host | command, composition path, or lifecycle owner |
 
-File length alone and CRUD symmetry are not split boundaries. Keep small related operations together when separate files would add only declarations and navigation. Move the smallest complete responsibility first, compile, and run its focused tests before extracting another one.
+Give shared row or wire types their own module only when multiple adapter operations genuinely share the same representation.
+
+File length and CRUD symmetry are not split boundaries. Keep inseparable operations together when splitting would add only forwarding code, declarations, and navigation; record that exception in the design checkpoint. Move the smallest complete responsibility, including its focused tests, before extracting another one. Never mirror the same command or directory tree mechanically across crates.
 
 Guide chapters follow the same ownership rule. Crate-specific explanations live under their responsibility directory; cross-cutting implemented paths such as Task flow, observability, security, runtime, testing, and development stay at the Guide root rather than being assigned to one crate.
 
