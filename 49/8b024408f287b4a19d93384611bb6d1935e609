@@ -1,0 +1,23 @@
+postmortem/2026-08-27-progressive-disclosure-for-agent-rules.md
+  s_7ade5912032c24::t_e5a99ed33883b2 1-6,8,10-12
+docs/guide/development.md
+  s_7ade5912032c24::t_445666159de6ff 31,33,38,40-42,44,46,48-50,52,54,56
+docs/agents/domain.md
+  s_7ade5912032c24::t_f2f841d9c6a5e4 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "498b024408f287b4a19d93384611bb6d1935e609",
+  "prompts": {},
+  "sessions": {
+    "s_7ade5912032c24": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a04203-5ce1-7664-9790-f3a745c0eac2",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    }
+  }
+}
