@@ -80,7 +80,7 @@ check_skill_protocol() {
 }
 
 check_large_owner_anchors() {
-  local briefs=(
+  local standing=(
     "$repo_root/AGENTS.md"
     "$repo_root/app/AGENTS.md"
     "$repo_root/crates/application/AGENTS.md"
@@ -88,19 +88,29 @@ check_large_owner_anchors() {
     "$repo_root/crates/http/AGENTS.md"
     "$repo_root/crates/infrastructure/AGENTS.md"
   )
-  local skill owner relative needle bytes
-  while IFS= read -r -d '' skill; do
-    briefs[${#briefs[@]}]=$skill
-  done < <(find "$repo_root/.agents/skills" -type f -name SKILL.md -print0)
+  local owner relative needle bytes brief skill
 
   while IFS= read -r -d '' owner; do
     bytes=$(wc -c < "$owner" | tr -d '[:space:]')
     (( bytes >= 7500 )) || continue
     relative=${owner#"$repo_root/"}
     needle="\`$relative\`"
-    if grep -nF "$needle" "${briefs[@]}"; then
-      fail "$relative is $bytes bytes and must be routed through an anchor"
-    fi
+
+    for brief in "${standing[@]}"; do
+      if awk '
+        /^## Context routing$/ { active = 1; next }
+        active && /^## / { exit }
+        active { print }
+      ' "$brief" | grep -nF "$needle"; then
+        fail "$relative is $bytes bytes and standing Context Pointers must use an anchor"
+      fi
+    done
+
+    while IFS= read -r -d '' skill; do
+      if grep -nF "$needle" "$skill"; then
+        fail "$relative is $bytes bytes and Skills must reference it through an anchor"
+      fi
+    done < <(find "$repo_root/.agents/skills" -type f -name SKILL.md -print0)
   done < <(find "$repo_root/docs/agents" "$repo_root/docs/guide" -type f -name '*.md' -print0)
 }
 
