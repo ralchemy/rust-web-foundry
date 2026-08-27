@@ -7,7 +7,7 @@ description: Design or revise strategic Domain boundaries. Use before adding or 
 
 Define semantic ownership without turning every capability into a context, crate, or service.
 
-1. Read root `AGENTS.md` and the nearest local `AGENTS.md` for planned artifact changes. Match the applicable action-first Context Pointers, record or reuse the active plan's Context Set, and load each canonical owner once. Confirm that the Domain exploration and workflow branches select anchored sections of `docs/agents/domain.md`; do not read the whole owner by default.
+1. Read root `AGENTS.md` and the nearest local `AGENTS.md` for planned artifact changes. Match the applicable action-first Context Pointers, record or reuse the active plan's Context Set, and load each canonical owner once. Confirm that the Domain branches select `docs/agents/domain.md#before-exploring-read-these` and `docs/agents/domain.md#choose-the-smallest-domain-workflow`; do not read the whole Domain owner by default.
 2. Read the confirmed glossary, context map, capability documents, ADRs, discovery evidence, and relevant implementation selected by those owners. Separate facts from assumptions and open questions.
 3. Identify business capabilities and the decisions or lifecycle each capability owns. Classify Core, Supporting, or Generic only when the classification changes investment, ownership, or sourcing.
 4. Default to one bounded context. Split only when evidence shows different meanings, policies, lifecycles, ownership, or an unavoidable translation boundary.
