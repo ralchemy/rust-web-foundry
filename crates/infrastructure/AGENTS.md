@@ -4,13 +4,7 @@
 
 This crate implements application Ports for MySQL and outbound HTTP. Keep SQLx code under `mysql/` and reqwest code under `outbound_http/`; repositories stay under `mysql/repositories/`.
 
-## Context routing
-
-Changing a fixed query, database row conversion, persistence reconstruction, or SQLx metadata → read `docs/guide/infrastructure/database.md#checked-queries`.
-Changing a migration or schema lifecycle → read `docs/guide/infrastructure/database.md#migration-lifecycle`.
-Changing a transaction or cross-system consistency boundary → read `docs/guide/infrastructure/database.md#transaction-boundaries`.
-Changing persistence error mapping or database verification → read `docs/guide/infrastructure/database.md#failures-and-verification`.
-Changing client spans, outbound propagation, dependency logging, or telemetry redaction → read `docs/guide/observability.md`.
+Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload database or observability guidance merely because this crate is touched.
 
 ## Adapter contract
 
