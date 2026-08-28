@@ -4,9 +4,7 @@
 
 This crate owns use cases, outbound Port traits, orchestration, and stable application error categories. Keep them under `use_cases/`, `ports/`, or `errors/`.
 
-## Context routing
-
-Changing a Port capability, atomicity boundary, adapter dispatch strategy, or substitution seam → read `docs/guide/architecture/ports-and-adapters.md`.
+Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload Ports-and-Adapters guidance merely because this crate is touched.
 
 ## Port contract
 
