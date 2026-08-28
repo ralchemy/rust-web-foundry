@@ -29,7 +29,9 @@ When behavior changes, update code/tests and user documentation together. Keep e
 
 ## Compiled Context Pack
 
-Conditional engineering context is selected in two stages so implementation does not carry the discovery transcript.
+Conditional engineering context is compiled so implementation does not carry the discovery transcript.
+
+Admission precedes routing. Inspect only standing authority and enough of the nearest public path to expose material decisions. If behavior remains undefined, return `needs-decision` before compiling conditional context or loading a later optional Skill.
 
 `docs/agents/context-routes.tsv` is the single routing catalogue. Each row defines one stable action key, the concrete change shape that selects it, and one canonical `path[#anchor]` owner. Root and nearest-local `AGENTS.md` files contain standing protection only; they do not maintain a second routing table.
 
@@ -43,9 +45,31 @@ bash scripts/compile-agent-context.sh \
   --action design-checkpoint
 ```
 
-Use `--list-actions` to inspect the finite action vocabulary. The compiler adds root and nearest-local standing briefs from the planned paths, resolves every selected route once, extracts only a referenced Markdown section when an anchor is present, records each source as `path[#anchor]@content-sha`, and refuses a pack above its byte ceiling. Its default ceiling is 60,000 UTF-8 bytes.
+Use `--list-actions` to inspect the finite action vocabulary. The compiler adds root and nearest-local standing briefs from the planned paths, resolves every selected route once, extracts only a referenced Markdown section when an anchor is present, records each source as `path[#anchor]@content-sha`, and refuses a pack above its 60,000-byte default ceiling.
 
-The generated `.scratch/context-pack.md` is a read view and cache ledger, not an authority. Never edit or promote its prose. Source files remain canonical. If a source SHA changes, or planned/touched paths or action classes expand, rebuild the pack and read only newly selected or changed entries. Do not reload unchanged content merely because another task stage begins.
+The default output is the immutable, content-addressed `.scratch/context-packs/<pack_id>.md`. Extend scope without replacing earlier evidence:
+
+```sh
+bash scripts/compile-agent-context.sh \
+  --goal 'expanded task goal' \
+  --extend-from .scratch/context-packs/<pack_id>.md \
+  --path crates/application/src/use_cases/task.rs \
+  --action ports-adapters
+```
+
+Before handoff, verify source freshness and final coverage. `--base` includes committed, staged, unstaged, and untracked paths; explicit `--path` remains available when a Git baseline is not appropriate:
+
+```sh
+bash scripts/compile-agent-context.sh \
+  --verify-pack .scratch/context-packs/<pack_id>.md \
+  --base <starting-head> \
+  --action http-routing \
+  --action ports-adapters
+```
+
+The legacy `.scratch/context-pack.md` remains untouched. Every Pack is a read view and cache ledger, not an authority. Never edit or promote its prose. If a source SHA changes or scope expands, extend or rebuild and read only newly selected or changed entries.
+
+After reading the Pack, keep a short active checklist tied to touched paths and acceptance proof. It is working state, not a new authority; update it when scope changes and include it in the handoff.
 
 Action classification is about the operation being performed, not topical similarity. Touching `crates/http` does not imply every HTTP action. A route-only correction may need `http-routing`; transport validation is added only if validation semantics change; security, persistence, async, and Domain actions are absent unless their described change shape is actually present.
 
@@ -58,19 +82,47 @@ Implementation handoff must be small enough to start a fresh reviewer without re
 ```yaml
 evidence_pack:
   goal: <requested outcome>
-  context_pack: <generated commit or pack identity>
+  context_pack:
+    id: <content identity>
+    path: <stable artifact path>
+  active_constraints: []
   changed_paths: []
   decisions: []
   public_acceptance_path: <test or executable path>
   checks:
     - command: <focused command>
       outcome: passed|failed
+      log: <stable log path>
+  review:
+    batch_id: <id or none>
+    snapshot_id: <id or none>
+    reports_loaded: <2/2 or none>
+    standards_report: <stable path or none>
+    spec_report: <stable path or none>
+    reviewed_diff: <identity or none>
+    post_review_delta:
+      id: <identity or none>
+      reviewed: <true|false|not-applicable>
+    findings: []
   unresolved: []
 ```
 
-Keep complete successful logs outside the prompt when tooling permits. Carry command, exit status, the failing test or first root cause, and the smallest useful excerpt. The fresh reviewer receives the request, Context Pack, Evidence Pack, and complete diff. It reloads authority only when a recorded SHA is stale or the diff reveals an unclassified path or action.
+Keep complete successful logs outside the prompt when tooling permits. Carry command, exit status, the failing test or first root cause, and the smallest useful excerpt. A reviewed handoff retains every original finding with its status and owner. If fixes change the frozen diff, record the post-review delta and whether it received conformance review.
 
 This stage reset is deliberate: exploration, failed attempts, compiler output, and repeated source reads are execution history, not durable review context.
+
+### Frozen Review Batch
+
+A dispatcher freezes the request, Context Pack, Evidence Pack, complete diff, changed-file and commit lists, and the evidence for each review axis. A frozen reviewer reads only those files; missing evidence produces an `incomplete` report instead of live-tree exploration or new test execution.
+
+Completion notifications and status snippets are previews. Load the stable reports together:
+
+```sh
+bash scripts/load-review-reports.sh \
+  <batch-id> <snapshot-id> <standards-report> <spec-report>
+```
+
+The loader validates distinct readable files, matching marker lines, and non-empty `## Review` bodies, then prints both reports. Finding classification, fixes, handoff, and completion require an untruncated command result whose final line is `reports_loaded: 2/2` for the expected batch and snapshot. A transport without stable full-report paths leaves the Batch incomplete.
 
 ## Design checkpoint
 
@@ -80,6 +132,8 @@ Before production implementation that adds or changes a public workflow, Domain 
 - **Conversion seams:** state where raw HTTP, database, configuration, and downstream values become Domain or Application types and where they are serialized again. For every changed boundary, record source type, target type, mechanism, conversion owner, and failure owner.
 - **Interface:** name the module that owns the workflow and the smallest interface callers need. Record why inseparable operations remain together when splitting them would add only forwarding glue.
 - **Acceptance path:** name the public path and the smallest test that proves the behavior.
+
+Before changing a shared interface or Port, enumerate every caller and implementation; the checkpoint is incomplete until each one is accounted for.
 
 Documentation-only, message-only, and small expectation-only changes do not require this checkpoint. Update the checkpoint when evidence changes the design; do not repeat or re-read it mechanically at every task boundary. Before handoff, reconcile every named interface, module, conversion seam, and acceptance path with the actual code and executable evidence.
 
@@ -117,12 +171,13 @@ The same check validates that action keys are unique, every routed source and an
 
 Use stage-local context rather than one ever-growing conversation:
 
-1. **Route:** classify planned paths and action keys; compile the bounded Context Pack.
-2. **Implement:** read the pack once, trace the nearest existing public path, work in coherent slices, and reroute only when scope expands.
-3. **Handoff:** emit the compact Evidence Pack; keep full logs and failed-attempt transcripts out of the handoff.
-4. **Review:** start from fresh context with request + Context Pack + Evidence Pack + diff; reload only stale or newly selected authority.
+1. **Admit:** inspect the nearest public path and resolve material decisions; stop at `needs-decision` when required.
+2. **Route:** classify planned paths and action keys; compile the bounded Context Pack and active checklist.
+3. **Implement:** work in coherent slices and extend the Pack only when scope expands.
+4. **Handoff:** verify final Pack coverage and emit the compact Evidence Pack; keep full logs and failed-attempt transcripts out.
+5. **Review:** freeze evidence, run evidence-only review, and load every full report before classifying findings.
 
-Use a repository Skill when supported and applicable, otherwise produce the same repository-defined outcome directly. A subagent receives the task goal, current Context Set, relevant evidence, and the smallest source slice required for its assignment, not the parent conversation.
+Load an optional Skill only when execution reaches its explicit run, use, or invoke step. Use a repository Skill when supported and applicable, otherwise produce the same repository-defined outcome directly. A subagent receives the task goal, current Context Set, relevant evidence, and the smallest source slice required for its assignment, not the parent conversation.
 
 Do not paste the entire Guide into a prompt, copy its explanations into standing briefs, or treat a larger model context window as the task budget.
 

@@ -5,6 +5,7 @@ repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 manifest=${1:-"$repo_root/docs/agents/routed-context-budgets.tsv"}
 routes="$repo_root/docs/agents/context-routes.tsv"
 compiler="$repo_root/scripts/compile-agent-context.sh"
+report_loader="$repo_root/scripts/load-review-reports.sh"
 work_dir=$(mktemp -d)
 trap 'rm -rf "$work_dir"' EXIT
 
@@ -26,7 +27,7 @@ section_bytes() {
   local file="$repo_root/$relative"
   [[ -f "$file" ]] || fail "missing routed owner: $relative"
 
-  local start= end= level= matches=0 line_no=0
+  local start="" end="" level="" matches=0 line_no=0
   local line hashes heading slug current_level
 
   while IFS= read -r line || [[ -n "$line" ]]; do
@@ -86,6 +87,7 @@ route_source() {
 check_route_manifest() {
   [[ -f "$routes" ]] || fail "missing context route manifest"
   [[ -f "$compiler" ]] || fail "missing context compiler"
+  [[ -f "$report_loader" ]] || fail "missing review report loader"
 
   local action when source line_no=0
   : > "$work_dir/actions"
@@ -147,6 +149,115 @@ check_large_owner_anchors() {
   done < <(find "$repo_root/docs/agents" "$repo_root/docs/guide" -type f -name '*.md' -print0)
 }
 
+check_compiler_protocol() {
+  local fixture="$work_dir/compiler-fixture"
+  local base_pack="$work_dir/base-pack.md" same_pack="$work_dir/same-pack.md"
+  local extended_pack="$work_dir/extended-pack.md" tampered_pack="$work_dir/tampered-pack.md"
+  local base_ref base_id same_id
+
+  mkdir -p "$fixture/scripts" "$fixture/docs/agents" "$fixture/docs/guide"
+  cp "$compiler" "$fixture/scripts/compile-agent-context.sh"
+  printf '# Fixture rules\n' > "$fixture/AGENTS.md"
+  printf '%s\n' \
+    'governance|Changing governance|docs/guide/development.md#governance-and-documentation-changes' \
+    'testing-public-path|Changing a public check|docs/guide/testing.md' \
+    > "$fixture/docs/agents/context-routes.tsv"
+  printf '# Development\n\n## Governance and documentation changes\n\nFixture governance.\n' \
+    > "$fixture/docs/guide/development.md"
+  printf '# Testing\n\nFixture testing.\n' > "$fixture/docs/guide/testing.md"
+  printf 'tracked baseline\n' > "$fixture/tracked.txt"
+  printf 'unstaged baseline\n' > "$fixture/unstaged.txt"
+
+  git -C "$fixture" init -q
+  git -C "$fixture" add .
+  git -C "$fixture" -c user.name=fixture -c user.email=fixture@example.invalid \
+    -c commit.gpgSign=false -c core.hooksPath=/dev/null commit -qm baseline
+  base_ref=$(git -C "$fixture" rev-parse HEAD)
+
+  bash "$fixture/scripts/compile-agent-context.sh" \
+    --goal fixture --path tracked.txt --action governance --output "$base_pack" >/dev/null
+  bash "$fixture/scripts/compile-agent-context.sh" \
+    --goal fixture --path tracked.txt --action governance --output "$base_pack" >/dev/null
+  bash "$fixture/scripts/compile-agent-context.sh" \
+    --goal fixture --path tracked.txt --action governance --output "$same_pack" >/dev/null
+  base_id=$(sed -nE 's/^- pack_id: ([0-9a-f]+)$/\1/p' "$base_pack")
+  same_id=$(sed -nE 's/^- pack_id: ([0-9a-f]+)$/\1/p' "$same_pack")
+  [[ -n "$base_id" && "$base_id" == "$same_id" ]] || fail "context compiler does not produce stable pack IDs"
+
+  if bash "$fixture/scripts/compile-agent-context.sh" \
+    --goal changed --path tracked.txt --action governance --output "$base_pack" >/dev/null 2>&1; then
+    fail "context compiler overwrote an immutable pack"
+  fi
+
+  printf 'committed change\n' > "$fixture/committed.txt"
+  git -C "$fixture" add committed.txt
+  git -C "$fixture" -c user.name=fixture -c user.email=fixture@example.invalid \
+    -c commit.gpgSign=false -c core.hooksPath=/dev/null commit -qm committed-change
+  printf 'staged change\n' >> "$fixture/tracked.txt"
+  git -C "$fixture" add tracked.txt
+  printf 'unstaged change\n' >> "$fixture/unstaged.txt"
+  printf 'untracked change\n' > "$fixture/untracked.txt"
+
+  bash "$fixture/scripts/compile-agent-context.sh" \
+    --goal extended --extend-from "$base_pack" \
+    --path committed.txt --path unstaged.txt --path untracked.txt \
+    --action testing-public-path --output "$extended_pack" >/dev/null
+  bash "$fixture/scripts/compile-agent-context.sh" \
+    --verify-pack "$extended_pack" --base "$base_ref" \
+    --action governance --action testing-public-path >/dev/null
+
+  if bash "$fixture/scripts/compile-agent-context.sh" \
+    --verify-pack "$base_pack" --base "$base_ref" --action governance >/dev/null 2>&1; then
+    fail "context verification accepted missing changed paths"
+  fi
+  if bash "$fixture/scripts/compile-agent-context.sh" \
+    --verify-pack "$base_pack" --action testing-public-path >/dev/null 2>&1; then
+    fail "context verification accepted a missing action"
+  fi
+
+  cp "$extended_pack" "$tampered_pack"
+  printf 'tampered\n' >> "$tampered_pack"
+  if bash "$fixture/scripts/compile-agent-context.sh" --verify-pack "$tampered_pack" >/dev/null 2>&1; then
+    fail "context verification accepted a tampered pack"
+  fi
+
+  printf 'stale\n' >> "$fixture/AGENTS.md"
+  if bash "$fixture/scripts/compile-agent-context.sh" --verify-pack "$extended_pack" >/dev/null 2>&1; then
+    fail "context verification accepted a stale source"
+  fi
+}
+
+check_review_loader() {
+  local standards="$work_dir/standards.md" spec="$work_dir/spec.md"
+  local mismatch="$work_dir/mismatch.md" empty="$work_dir/empty.md" output="$work_dir/reports.out"
+
+  printf 'batchId=batch-1  \nsnapshotId=snapshot-1\n\n## Review\n- Standards finding.\n' > "$standards"
+  printf 'batchId=batch-1\nsnapshotId=snapshot-1  \n\n## Review\n- Spec result.\n' > "$spec"
+  bash "$report_loader" batch-1 snapshot-1 "$standards" "$spec" > "$output"
+  grep -Fq -- '- Standards finding.' "$output" || fail "review loader omitted the Standards report"
+  grep -Fq -- '- Spec result.' "$output" || fail "review loader omitted the Spec report"
+  [[ "$(grep -Fc 'reports_loaded: 2/2' "$output")" -eq 1 ]] || fail "review loader emitted an ambiguous success marker"
+  tail -n 1 "$output" | grep -Fqx 'reports_loaded: 2/2 batchId=batch-1 snapshotId=snapshot-1' \
+    || fail "review loader did not finish with the 2/2 marker"
+
+  if bash "$report_loader" batch-1 snapshot-1 "$standards" "$work_dir/missing.md" >/dev/null 2>&1; then
+    fail "review loader accepted a missing report"
+  fi
+  if bash "$report_loader" batch-1 snapshot-1 "$standards" "$standards" >/dev/null 2>&1; then
+    fail "review loader accepted the same report twice"
+  fi
+
+  printf 'batchId=batch-1\nsnapshotId=snapshot-2\n\n## Review\n- Mismatch.\n' > "$mismatch"
+  if bash "$report_loader" batch-1 snapshot-1 "$standards" "$mismatch" >/dev/null 2>&1; then
+    fail "review loader accepted mismatched markers"
+  fi
+
+  printf 'batchId=batch-1\nsnapshotId=snapshot-1\n\n## Review\n\n' > "$empty"
+  if bash "$report_loader" batch-1 snapshot-1 "$standards" "$empty" >/dev/null 2>&1; then
+    fail "review loader accepted an empty Review body"
+  fi
+}
+
 add_budget_source() {
   local scenario=$1 source=$2 bytes current
   if ! grep -Fxq "$source" "$work_dir/$scenario.sources"; then
@@ -203,4 +314,6 @@ check_route_manifest
 check_skill_protocol
 check_standing_briefs
 check_large_owner_anchors
+check_compiler_protocol
+check_review_loader
 check_budgets

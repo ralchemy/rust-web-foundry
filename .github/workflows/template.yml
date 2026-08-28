@@ -102,6 +102,7 @@ jobs:
             docs/guide/security.md
             scripts/check-agent-context.sh
             scripts/compile-agent-context.sh
+            scripts/load-review-reports.sh
           )
           for path in "${verbatim_governance_files[@]}"; do
             cmp -s "$template_root/$path" "$path"
@@ -141,6 +142,7 @@ jobs:
           test -f postmortem/2026-08-27-progressive-disclosure-for-agent-rules.md
           test -f postmortem/2026-08-27-harden-agent-context-routing.md
           test -f postmortem/2026-08-28-compile-agent-context-packs.md
+          test -f postmortem/2026-08-28-make-agent-evidence-deterministic.md
 
           test "$(wc -c < AGENTS.md)" -le 6000
           bash scripts/check-agent-context.sh
