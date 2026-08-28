@@ -1,0 +1,31 @@
+docs/guide/http/validation.md
+  s_35493f4181460d::t_d3cff3f6548885 28
+crates/http/src/routes/mod.rs
+  s_35493f4181460d::t_fd3c27a731d201 223
+crates/application/src/use_cases/mod.rs
+  s_35493f4181460d::t_12dcdf38a225f7 1,3
+crates/application/src/use_cases/task/mod.rs
+  s_35493f4181460d::t_ec55f29e9e94a7 1-7
+docs/agents/routed-context-budgets.tsv
+  s_35493f4181460d::t_b098922bd811e9 36
+crates/infrastructure/src/mysql/repositories/task/conversions.rs
+  s_35493f4181460d::t_e37d7009d97f2e 95
+docs/guide/testing.md
+  s_35493f4181460d::t_c5e37d11987c6b 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "68c0bdc9cc36f5b64c4c53d4cce16cd001f9481f",
+  "prompts": {},
+  "sessions": {
+    "s_35493f4181460d": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a04776-656d-7873-a20f-85f0671612af",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    }
+  }
+}
