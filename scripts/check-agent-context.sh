@@ -66,15 +66,16 @@ source_bytes() {
 }
 
 standing_for_path() {
-  local p=${1#./}
+  local p=${1#./} dir
   printf '%s\n' AGENTS.md
-  case "$p" in
-    app/*|app) printf '%s\n' app/AGENTS.md ;;
-    crates/domain/*|crates/domain) printf '%s\n' crates/domain/AGENTS.md ;;
-    crates/application/*|crates/application) printf '%s\n' crates/application/AGENTS.md ;;
-    crates/http/*|crates/http) printf '%s\n' crates/http/AGENTS.md ;;
-    crates/infrastructure/*|crates/infrastructure) printf '%s\n' crates/infrastructure/AGENTS.md ;;
-  esac
+  if [[ -d "$repo_root/$p" ]]; then dir=$p; else dir=$(dirname "$p"); fi
+  while [[ "$dir" != "." && "$dir" != "/" ]]; do
+    if [[ -f "$repo_root/$dir/AGENTS.md" ]]; then
+      printf '%s\n' "$dir/AGENTS.md"
+      return
+    fi
+    dir=$(dirname "$dir")
+  done
 }
 
 route_source() {
@@ -120,18 +121,11 @@ check_skill_protocol() {
 
 check_standing_briefs() {
   local brief
-  for brief in \
-    "$repo_root/AGENTS.md" \
-    "$repo_root/app/AGENTS.md" \
-    "$repo_root/crates/application/AGENTS.md" \
-    "$repo_root/crates/domain/AGENTS.md" \
-    "$repo_root/crates/http/AGENTS.md" \
-    "$repo_root/crates/infrastructure/AGENTS.md"; do
-    [[ -f "$brief" ]] || fail "missing standing brief: ${brief#"$repo_root/"}"
+  while IFS= read -r -d '' brief; do
     if grep -Fq '→ read' "$brief"; then
       fail "${brief#"$repo_root/"} contains conditional routing; routes belong in docs/agents/context-routes.tsv"
     fi
-  done
+  done < <(find "$repo_root" -name AGENTS.md -type f -print0)
 
   local root_bytes
   root_bytes=$(wc -c < "$repo_root/AGENTS.md" | tr -d '[:space:]')
