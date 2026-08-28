@@ -4,8 +4,6 @@
 
 This crate owns the Axum Router, handlers, DTOs, extractors, middleware, state, and public error translation. Place each change in the matching responsibility directory.
 
-Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload routing, validation, middleware, or observability chapters merely because this crate is touched.
-
 ## Public adapter contract
 
 - Depend only on `application` and `domain` inside the workspace; never depend on `infrastructure`.
@@ -26,4 +24,4 @@ Conditional context for this crate is selected through `docs/agents/context-rout
 
 ## Proof
 
-- Test behavior through the public installed Router, not a detached handler helper.
+- Public HTTP behavior changes are proved through the installed Router.

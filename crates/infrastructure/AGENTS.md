@@ -4,8 +4,6 @@
 
 This crate implements application Ports for MySQL and outbound HTTP. Keep SQLx code under `mysql/` and reqwest code under `outbound_http/`; repositories stay under `mysql/repositories/`.
 
-Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload database or observability guidance merely because this crate is touched.
-
 ## Adapter contract
 
 - Depend only on `application` and `domain` inside the workspace; never depend on `http`.
@@ -23,4 +21,4 @@ Conditional context for this crate is selected through `docs/agents/context-rout
 
 ## Proof
 
-- At handoff, account for every changed SQL statement by its checked macro, explicit selected columns, private row mapping when it returns data, and refreshed `.sqlx` metadata.
+- SQL changes are accounted for at handoff by their checked macro, explicit selected columns, private row mapping when data returns, and refreshed `.sqlx` metadata.

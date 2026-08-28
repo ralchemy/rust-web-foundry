@@ -4,8 +4,6 @@
 
 This crate owns use cases, outbound Port traits, orchestration, and stable application error categories. Keep them under `use_cases/`, `ports/`, or `errors/`.
 
-Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload Ports-and-Adapters guidance merely because this crate is touched.
-
 ## Port contract
 
 - Depend only on `domain` inside the workspace.
@@ -27,4 +25,4 @@ Conditional context for this crate is selected through `docs/agents/context-rout
 
 ## Proof
 
-- Test orchestration with inline fakes through the public use case.
+- Orchestration changes are proved with inline fakes through the public use case.

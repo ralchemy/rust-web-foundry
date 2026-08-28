@@ -4,8 +4,6 @@
 
 This crate is the only composition root. It owns command parsing, settings, concrete adapter wiring, Logforth/fastrace initialization, listener startup, and ordered shutdown.
 
-Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload configuration, observability, or runtime chapters merely because this crate is touched.
-
 ## Host and composition contract
 
 - Keep `main.rs` as a thin call to `app::run`.
@@ -17,4 +15,4 @@ Conditional context for this crate is selected through `docs/agents/context-rout
 
 ## Proof
 
-- Build the same installed Router for production and the cross-crate integration test; do not create a second test composition path or state bag.
+- Composition changes are proved through the same installed Router used by production and the cross-crate integration test; one composition path owns both.
