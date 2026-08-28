@@ -9,7 +9,7 @@ Repository authority is layered by what each surface owns:
 1. source, manifests, tests, Just recipes, and CI own executable facts about installed behavior;
 2. root and nearest-local `AGENTS.md` files own standing governance, instruction discovery, scope responsibility, and retained hard protection;
 3. [`docs/agents/domain.md`](../agents/domain.md) owns the framework-neutral Domain workflow outcomes;
-4. a Guide or Reference chapter reached through a matching action-first Context Pointer owns that conditional engineering contract; and
+4. a Guide or Reference chapter selected through `docs/agents/context-routes.tsv` and included in the compiled Context Pack owns that conditional engineering contract; and
 5. Skills provide optional procedures and never replace a mandatory repository outcome.
 
 Ordinary implementation treats Guide contracts as read-only. Modify a Guide or its authority routing only when the active issue or specification explicitly declares Governance or Documentation scope.
@@ -26,7 +26,7 @@ Ordinary implementation treats Guide contracts as read-only. Modify a Guide or i
 
 ## How to use this Guide
 
-Read the Baseline chapter for the responsibility being changed. Context Pointers in root and nearest-local standing briefs identify conditional chapters for the changed seam. The Guide is not a mandatory linear tutorial.
+Read only the Baseline chapter selected for the responsibility being changed. Action keys in `docs/agents/context-routes.tsv` route the compiled Context Pack to conditional chapters for the changed seam. The Guide is not a mandatory linear tutorial.
 
 ## Baseline
 

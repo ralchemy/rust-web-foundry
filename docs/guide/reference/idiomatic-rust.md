@@ -2,7 +2,7 @@
 
 > **Status:** Generated-service code contract
 >
-> **Authority:** When a Context Pointer matches, this chapter owns the conditional shared Rust code contract. Source, tests, Clippy, and architecture checks own executable facts; root and nearest-local rules retain standing scope responsibility and local hard protection.
+> **Authority:** When an applicable action key selects this chapter into the compiled Context Pack, this chapter owns the conditional shared Rust code contract. Source, tests, Clippy, and architecture checks own executable facts; root and nearest-local rules retain standing scope responsibility and local hard protection.
 
 This chapter defines the Rust vocabulary that the generated service and coding agents use by
 default. It constrains durable code outcomes rather than depending on a particular AI agent,

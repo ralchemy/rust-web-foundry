@@ -6,7 +6,7 @@
 >
 > **Read when:** A measured latency, throughput, memory, CPU, connection, or payload problem requires a performance change.
 >
-> **Authority:** When a Context Pointer matches, this chapter is the conditional performance contract. Source, tests, and gates own executable facts; root and nearest-local rules retain the standing trigger, scope responsibility, and local hard protection.
+> **Authority:** When an applicable action key selects this chapter into the compiled Context Pack, this chapter is the conditional performance contract. Source, tests, and gates own executable facts; root and nearest-local rules retain standing scope responsibility and local hard protection.
 
 Rust and async I/O provide useful building blocks, not a performance guarantee. Optimize a named workload against an observable target; do not infer a bottleneck from code shape alone.
 
