@@ -52,14 +52,16 @@ jobs:
       - name: Generate and verify
         run: |
           template_root=$PWD
-          bash scripts/check-agent-context.sh
+          test -f "$template_root/AGENTS.md"
+          test "$(find "$template_root" -type f -name AGENTS.md | wc -l)" -eq 1
+          test "$(find "$template_root/.agents/skills" -type f -name SKILL.md | wc -l)" -eq 0
           cargo generate --path . --name template-smoke --destination "$RUNNER_TEMP" --vcs none
           cd "$RUNNER_TEMP/template-smoke"
           test -f .github/workflows/ci.yml
           test "$(find crates -name Cargo.toml | wc -l)" -eq 4
           test -f app/Cargo.toml
 
-          verbatim_governance_files=(
+          rendered_governance_files=(
             AGENTS.md
             app/AGENTS.md
             crates/application/AGENTS.md
@@ -73,6 +75,12 @@ jobs:
             .agents/skills/ddd-strategic-design/SKILL.md
             .agents/skills/ddd-tactical-design/SKILL.md
             .agents/skills/review-pr/SKILL.md
+          )
+          for path in "${rendered_governance_files[@]}"; do
+            cmp -s "$template_root/$path.liquid" "$path"
+          done
+
+          verbatim_governance_files=(
             docs/agents/domain.md
             docs/agents/context-routes.tsv
             docs/agents/routed-context-budgets.tsv
@@ -128,21 +136,13 @@ jobs:
             test -f "${path%.liquid}"
             test ! -e "$path"
           done < <(find "$template_root" -type f -name '*.liquid' -print0)
+          test -z "$(find . -type f -name '*.liquid' -print -quit)"
 
-          for path in cargo-generate.toml TEMPLATE.md .scratch .github/workflows/template.yml; do
+          for path in cargo-generate.toml TEMPLATE.md .scratch postmortem .github/workflows/template.yml; do
             test ! -e "$path"
           done
           grep -Fxq '# template-smoke' README.md
           ! grep -Fq 'Primary design reference: Bulletproof Rust Web' README.md
-
-          while IFS= read -r -d '' source; do
-            path=${source#"$template_root/"}
-            cmp -s "$source" "$path"
-          done < <(find "$template_root/postmortem" -type f -name '*.md' -print0)
-          test -f postmortem/2026-08-27-progressive-disclosure-for-agent-rules.md
-          test -f postmortem/2026-08-27-harden-agent-context-routing.md
-          test -f postmortem/2026-08-28-compile-agent-context-packs.md
-          test -f postmortem/2026-08-28-make-agent-evidence-deterministic.md
 
           test "$(wc -c < AGENTS.md)" -le 6000
           bash scripts/check-agent-context.sh

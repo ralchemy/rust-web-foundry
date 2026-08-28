@@ -4,5 +4,6 @@ ignore = [
     "cargo-generate.toml",
     "TEMPLATE.md",
     ".scratch",
+    "postmortem",
     ".github/workflows/template.yml",
 ]
