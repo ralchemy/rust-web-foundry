@@ -51,14 +51,15 @@ normalize_path() {
 }
 
 standing_for_path() {
-  local p=$1
-  case "$p" in
-    app/*|app) printf '%s\n' app/AGENTS.md ;;
-    crates/domain/*|crates/domain) printf '%s\n' crates/domain/AGENTS.md ;;
-    crates/application/*|crates/application) printf '%s\n' crates/application/AGENTS.md ;;
-    crates/http/*|crates/http) printf '%s\n' crates/http/AGENTS.md ;;
-    crates/infrastructure/*|crates/infrastructure) printf '%s\n' crates/infrastructure/AGENTS.md ;;
-  esac
+  local p=$1 dir
+  if [[ -d "$repo_root/$p" ]]; then dir=$p; else dir=$(dirname "$p"); fi
+  while [[ "$dir" != "." && "$dir" != "/" ]]; do
+    if [[ -f "$repo_root/$dir/AGENTS.md" ]]; then
+      printf '%s\n' "$dir/AGENTS.md"
+      return
+    fi
+    dir=$(dirname "$dir")
+  done
 }
 
 slugify_heading() {
@@ -104,7 +105,6 @@ emit_source() {
 
 mkdir -p "$(dirname "$output")"
 tmp=$(mktemp)
-trap 'rm -f "$tmp"' EXIT
 sources=$(mktemp)
 trap 'rm -f "$tmp" "$sources"' EXIT
 
@@ -150,6 +150,6 @@ if ((bytes > max_bytes)); then
 fi
 printf '\n<!-- compiled_bytes: %s -->\n' "$bytes" >> "$tmp"
 mv "$tmp" "$output"
-trap - EXIT
 rm -f "$sources"
+trap - EXIT
 printf 'compiled agent context: %s bytes -> %s\n' "$bytes" "${output#"$repo_root/"}"
