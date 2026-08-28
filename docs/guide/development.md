@@ -5,7 +5,7 @@ Use the smallest public check that proves the current change:
 - run the focused owning-crate test while editing;
 - run `just check` before handoff; it does not require MySQL;
 - run `just test` when an existing local MySQL should exercise every workspace test;
-- run `just verify` for configuration, migrations, composition, lifecycle, or installed-route changes.
+- run `just verify` for configuration, migrations, composition, lifecycle, checked SQL, or installed-route changes.
 
 The complete local proof is:
 
@@ -27,32 +27,50 @@ The [Guide authority hierarchy](README.md#authority) defines which surface owns 
 
 When behavior changes, update code/tests and user documentation together. Keep each mandatory rule with its single repository owner rather than copying it into a Skill or prompt.
 
-## Active-plan Context Set
+## Compiled Context Pack
 
-When a task loads any conditional owner, keep a lightweight Context Set in the active issue or plan. It is a read ledger and routing input, not a summary or second authority.
+Conditional engineering context is selected in two stages so implementation does not carry the discovery transcript.
 
-```yaml
-context_set:
-  scope_version: 1
-  planned_paths:
-    - crates/http/src/routes/tasks.rs
-  matched_branches:
-    - changing routes or route-family composition
-  standing:
-    - ref: AGENTS.md
-      content_sha: <git-hash-object>
-    - ref: crates/http/AGENTS.md
-      content_sha: <git-hash-object>
-  owners:
-    - ref: docs/guide/http/routing-and-handlers.md
-      content_sha: <git-hash-object>
-      reason: changing route-family composition
-      loaded: true
+`docs/agents/context-routes.tsv` is the single routing catalogue. Each row defines one stable action key, the concrete change shape that selects it, and one canonical `path[#anchor]` owner. Root and nearest-local `AGENTS.md` files contain standing protection only; they do not maintain a second routing table.
+
+Before production implementation, classify the smallest planned touched paths and applicable action keys, then run:
+
+```sh
+bash scripts/compile-agent-context.sh \
+  --goal 'short task goal' \
+  --path crates/http/src/routes/mod.rs \
+  --action http-routing \
+  --action design-checkpoint
 ```
 
-Use `git hash-object <path>` for `content_sha`, so the ledger detects both committed and working-tree content. A `ref` is a repository-relative path with an optional Markdown anchor. Keep only identity, selection reason, and loaded state; do not paste owner prose into the plan.
+Use `--list-actions` to inspect the finite action vocabulary. The compiler adds root and nearest-local standing briefs from the planned paths, resolves every selected route once, extracts only a referenced Markdown section when an anchor is present, records each source as `path[#anchor]@content-sha`, and refuses a pack above its byte ceiling. Its default ceiling is 60,000 UTF-8 bytes.
 
-Before reading, reuse an entry with the same `ref@content_sha`. Increment `scope_version`, rematch root plus nearest-local Pointers, and add only newly selected owners when a planned or touched path, action branch, or content SHA changes. A subagent or reviewer receives the task goal, relevant evidence, and this Context Set instead of the entire discovery transcript. A Context Set never proves that an omitted owner is irrelevant; the root/local Pointer union remains the completeness rule.
+The generated `.scratch/context-pack.md` is a read view and cache ledger, not an authority. Never edit or promote its prose. Source files remain canonical. If a source SHA changes, or planned/touched paths or action classes expand, rebuild the pack and read only newly selected or changed entries. Do not reload unchanged content merely because another task stage begins.
+
+Action classification is about the operation being performed, not topical similarity. Touching `crates/http` does not imply every HTTP action. A route-only correction may need `http-routing`; transport validation is added only if validation semantics change; security, persistence, async, and Domain actions are absent unless their described change shape is actually present.
+
+If the compiler cannot be executed, follow the same deterministic protocol manually from `context-routes.tsv`: root + nearest-local standing briefs for every touched path + every selected routed source, with unique sources loaded once. Broad Guide reads are not a fallback.
+
+### Evidence Pack and stage reset
+
+Implementation handoff must be small enough to start a fresh reviewer without replaying the implementation session. Record only:
+
+```yaml
+evidence_pack:
+  goal: <requested outcome>
+  context_pack: <generated commit or pack identity>
+  changed_paths: []
+  decisions: []
+  public_acceptance_path: <test or executable path>
+  checks:
+    - command: <focused command>
+      outcome: passed|failed
+  unresolved: []
+```
+
+Keep complete successful logs outside the prompt when tooling permits. Carry command, exit status, the failing test or first root cause, and the smallest useful excerpt. The fresh reviewer receives the request, Context Pack, Evidence Pack, and complete diff. It reloads authority only when a recorded SHA is stale or the diff reveals an unclassified path or action.
+
+This stage reset is deliberate: exploration, failed attempts, compiler output, and repeated source reads are execution history, not durable review context.
 
 ## Design checkpoint
 
@@ -73,52 +91,40 @@ At each stable slice boundary, run the smallest focused check that can expose a 
 
 Continue automatically after a stable boundary passes. Stop only when a material business decision is unresolved, required authority or external access is missing, or no remaining task can progress independently; report the exact blocker and the evidence already completed.
 
+When one coherent slice would compile a Context Pack above the default 60,000-byte ceiling, split at the smallest stable dependency boundary. Raising the ceiling is a Governance decision, not an implementation convenience.
+
 ## Governance and documentation changes
 
-Changing `AGENTS.md`, Guide authority, Context Pointer routing, a routed-context budget, or a generated governance check requires Governance or Documentation scope declared by the active issue or specification. That scope must provide an exact changed-path allowlist and map every rule move to its current owner and stable clause key before the first repository edit. Ordinary implementation treats these documents as read-only; if it discovers an owner gap or needs an undeclared path, stop and request the smallest scope decision instead of editing the contract opportunistically.
+Changing `AGENTS.md`, Guide authority, `docs/agents/context-routes.tsv`, routed-context budgets, the context compiler, or a generated governance check requires Governance or Documentation scope declared by the active issue or specification. The change must provide an exact changed-path allowlist and map every moved rule to one canonical owner before the first repository edit. Ordinary implementation treats these documents as read-only; if it discovers an owner gap or needs an undeclared path, stop and request the smallest scope decision instead of editing the contract opportunistically.
 
-Review the complete diff of every changed owner. Account for each changed path against the allowlist and each moved clause against one complete canonical owner; a pointer, optional procedure, postmortem, or executable check is not a second prose owner. Preserve business, architecture, dependency, runtime, transport, persistence, and named-gate semantics unless the declared scope explicitly changes one of them.
+Review the complete diff of every changed owner. Account for each changed path against the allowlist and each moved clause against one complete canonical owner; a route row, generated Context Pack, optional procedure, postmortem, or executable check is not a second prose owner. Preserve business, architecture, dependency, runtime, transport, persistence, and named-gate semantics unless the declared scope explicitly changes one of them.
 
 ### Standing-brief size review
 
-This section is the canonical location for the frozen UTF-8 byte sizes of the six standing briefs and their root-plus-nearest-local totals. The values below are frozen after the six-file routing migration:
+Standing briefs are intentionally limited to always-relevant protection. `scripts/check-agent-context.sh` rejects a root `AGENTS.md` above 6,000 UTF-8 bytes and rejects conditional `→ read` routing in any of the six standing briefs. Conditional routing belongs only in `docs/agents/context-routes.tsv`.
 
-| Metric | Bytes |
-|---|---:|
-| `AGENTS.md` | 9,934 |
-| `app/AGENTS.md` | 1,853 |
-| `crates/domain/AGENTS.md` | 1,882 |
-| `crates/application/AGENTS.md` | 3,201 |
-| `crates/http/AGENTS.md` | 5,219 |
-| `crates/infrastructure/AGENTS.md` | 3,190 |
-| Six-file aggregate | 25,279 |
-| `AGENTS.md` + `app/AGENTS.md` | 11,787 |
-| `AGENTS.md` + `crates/domain/AGENTS.md` | 11,816 |
-| `AGENTS.md` + `crates/application/AGENTS.md` | 13,135 |
-| `AGENTS.md` + `crates/http/AGENTS.md` | 15,153 |
-| `AGENTS.md` + `crates/infrastructure/AGENTS.md` | 13,124 |
-
-A later change requires Governance review only when a frozen metric grows by both more than 5% and more than 256 bytes; the review explains why the added content must remain standing or why a Context Pointer cannot own it. The threshold is a review warning, not an automatic rejection. The root standing brief must remain at or below 10,000 bytes.
+Do not grow a standing brief merely to improve explanation. Put task-conditional engineering contracts with their existing Guide or Domain owner, add or refine one route action, and keep rationale outside the hot path. A hard rule stays standing only when a routing miss would make ordinary work unsafe.
 
 ## Routed-context budget
 
-Standing-brief size alone does not measure the context an agent actually loads. `docs/agents/routed-context-budgets.tsv` defines representative workflows as the union of full standing briefs and anchored conditional-owner sections. `scripts/check-agent-context.sh` resolves each Markdown anchor, counts every unique source once, and rejects a scenario above its byte ceiling.
+Standing-brief size alone does not measure the context an agent actually loads. `docs/agents/routed-context-budgets.tsv` defines representative implementation shapes as unions of standing briefs and routed owner sections. `scripts/check-agent-context.sh` resolves each Markdown anchor, counts every unique source once, and rejects a scenario above its byte ceiling.
 
-The budgets are regression ceilings, not instructions to preload every listed source. A scenario represents a repeated task shape; the real task still loads only matched branches. When a ceiling would grow, first shorten standing protection, split a broad Pointer, or move explanation behind a narrower anchor. Raising a ceiling requires Governance scope and a review of the scenario's selected sources and current measured bytes.
+The budgets are regression ceilings, not instructions to preload every listed source. A real task still selects only actions that match its change. When a ceiling would grow, first shorten standing protection, narrow an owner anchor, remove a redundant route, or split a task. Raising a ceiling requires Governance scope.
 
-The same check also requires every repository Skill to use Context Pointers and a Context Set. It discovers conditional owners at or above 7,500 UTF-8 bytes and rejects any standing brief or Skill that references one without an anchor. `just architecture` runs it without MySQL, so generated services retain both the routing protocol and its budget.
+The same check validates that action keys are unique, every routed source and anchor resolves, large conditional owners are always anchored, standing briefs contain no legacy route pointers, and every repository Skill consumes the Context Pack without directly naming conditional Guide owners. `just architecture` runs this check without MySQL.
 
 ## AI-assisted workflow
 
-Give an agent the smallest authoritative context for the change, independent of its orchestration framework:
+Use stage-local context rather than one ever-growing conversation:
 
-1. read root and the nearest `AGENTS.md` for every planned touched path; do not assume descendant rules were loaded automatically;
-2. match the Pointer union, record or reuse the active-plan Context Set, and read each selected `ref@content_sha` once;
-3. trace the existing public path, rerouting only when the touched paths or action branches expand;
-4. use a repository Skill when supported and applicable, otherwise produce the same repository-defined outcome directly;
-5. implement coherent slices and run the owning checks.
+1. **Route:** classify planned paths and action keys; compile the bounded Context Pack.
+2. **Implement:** read the pack once, trace the nearest existing public path, work in coherent slices, and reroute only when scope expands.
+3. **Handoff:** emit the compact Evidence Pack; keep full logs and failed-attempt transcripts out of the handoff.
+4. **Review:** start from fresh context with request + Context Pack + Evidence Pack + diff; reload only stale or newly selected authority.
 
-Do not paste the entire Guide into a prompt or copy its explanations into standing briefs.
+Use a repository Skill when supported and applicable, otherwise produce the same repository-defined outcome directly. A subagent receives the task goal, current Context Set, relevant evidence, and the smallest source slice required for its assignment, not the parent conversation.
+
+Do not paste the entire Guide into a prompt, copy its explanations into standing briefs, or treat a larger model context window as the task budget.
 
 ## Dependency selection
 
@@ -148,4 +154,4 @@ These are symptoms of responsibility drift in this workspace:
 - detached production tasks, unbounded channels, or retries without lifecycle and idempotency contracts;
 - `common`, `utils`, pass-through wrappers, or a trait with one speculative implementation.
 
-Fix the owning boundary rather than compensating at callers. A matched Guide chapter owns the conditional contract, standing briefs retain path protection, and source plus public tests own executable facts.
+Fix the owning boundary rather than compensating at callers. A routed Guide chapter owns its conditional contract, standing briefs retain path protection, and source plus public tests own executable facts.
