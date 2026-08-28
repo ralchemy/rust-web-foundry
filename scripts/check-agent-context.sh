@@ -65,6 +65,23 @@ source_bytes() {
   fi
 }
 
+standing_for_path() {
+  local p=${1#./}
+  printf '%s\n' AGENTS.md
+  case "$p" in
+    app/*|app) printf '%s\n' app/AGENTS.md ;;
+    crates/domain/*|crates/domain) printf '%s\n' crates/domain/AGENTS.md ;;
+    crates/application/*|crates/application) printf '%s\n' crates/application/AGENTS.md ;;
+    crates/http/*|crates/http) printf '%s\n' crates/http/AGENTS.md ;;
+    crates/infrastructure/*|crates/infrastructure) printf '%s\n' crates/infrastructure/AGENTS.md ;;
+  esac
+}
+
+route_source() {
+  local action=$1
+  awk -F'|' -v key="$action" '!/^#/ && $1 == key { print $3 }' "$routes"
+}
+
 check_route_manifest() {
   [[ -f "$routes" ]] || fail "missing context route manifest"
   [[ -f "$compiler" ]] || fail "missing context compiler"
@@ -136,16 +153,27 @@ check_large_owner_anchors() {
   done < <(find "$repo_root/docs/agents" "$repo_root/docs/guide" -type f -name '*.md' -print0)
 }
 
+add_budget_source() {
+  local scenario=$1 source=$2 bytes current
+  if ! grep -Fxq "$source" "$work_dir/$scenario.sources"; then
+    printf '%s\n' "$source" >> "$work_dir/$scenario.sources"
+    bytes=$(source_bytes "$source")
+    current=$(cat "$work_dir/$scenario.total")
+    printf '%s\n' "$((current + bytes))" > "$work_dir/$scenario.total"
+  fi
+}
+
 check_budgets() {
   [[ -f "$manifest" ]] || fail "missing budget manifest: ${manifest#"$repo_root/"}"
 
-  local scenario max_bytes source line_no=0 bytes current
-  while IFS='|' read -r scenario max_bytes source || [[ -n "${scenario}${max_bytes}${source}" ]]; do
+  local scenario max_bytes kind value line_no=0 source
+  while IFS='|' read -r scenario max_bytes kind value || [[ -n "${scenario}${max_bytes}${kind}${value}" ]]; do
     ((line_no += 1))
     [[ -z "$scenario" || "$scenario" == \#* ]] && continue
     [[ "$scenario" =~ ^[A-Za-z0-9_-]+$ ]] || fail "invalid scenario name on row $line_no"
-    [[ -n "$max_bytes" && -n "$source" ]] || fail "invalid manifest row $line_no"
     [[ "$max_bytes" =~ ^[0-9]+$ ]] || fail "non-numeric budget on row $line_no"
+    [[ "$kind" == path || "$kind" == action ]] || fail "invalid budget kind on row $line_no: $kind"
+    [[ -n "$value" ]] || fail "missing budget value on row $line_no"
 
     if [[ ! -f "$work_dir/$scenario.limit" ]]; then
       printf '%s\n' "$max_bytes" > "$work_dir/$scenario.limit"
@@ -156,11 +184,12 @@ check_budgets() {
       fail "scenario $scenario has inconsistent ceilings"
     fi
 
-    if ! grep -Fxq "$source" "$work_dir/$scenario.sources"; then
-      printf '%s\n' "$source" >> "$work_dir/$scenario.sources"
-      bytes=$(source_bytes "$source")
-      current=$(cat "$work_dir/$scenario.total")
-      printf '%s\n' "$((current + bytes))" > "$work_dir/$scenario.total"
+    if [[ "$kind" == path ]]; then
+      while IFS= read -r source; do add_budget_source "$scenario" "$source"; done < <(standing_for_path "$value")
+    else
+      source=$(route_source "$value")
+      [[ -n "$source" ]] || fail "budget scenario $scenario uses unknown action: $value"
+      add_budget_source "$scenario" "$source"
     fi
   done < "$manifest"
 
