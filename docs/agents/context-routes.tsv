@@ -11,6 +11,7 @@ security-exposure|Changing network exposure, listener binding, or transport-secu
 security-capability|Adding a security capability that the baseline does not install|docs/guide/security.md#capabilities-not-installed
 security-extension|Verifying or extending an added security capability|docs/guide/security.md#extension-and-verification
 testing-public-path|Changing public-path acceptance evidence, test placement, a public Just/CI/architecture/acceptance gate, or other cross-crate evidence|docs/guide/testing.md
+testing-sqlx-offline|Changing SQLx metadata, offline query compilation, or the checked-query compile boundary|docs/guide/testing.md#sqlx-offline-is-a-compile-boundary
 design-checkpoint|Changing a public workflow, Domain behavior, Port, database schema or index, persistence contract, or external integration|docs/guide/development.md#design-checkpoint
 implementation-slices|Implementing a confirmed design through multiple dependent tasks|docs/guide/development.md#coherent-implementation-slices
 dependency-selection|Adding or replacing a dependency|docs/guide/development.md#dependency-selection
@@ -29,6 +30,7 @@ async-timeout-mutation|Adding a timeout around mutating work|docs/guide/referenc
 async-channel|Adding a channel loop or channel-backed capability|docs/guide/reference/async-and-cancellation.md#choose-channel-semantics-before-channel-type
 async-background|Adding periodic work, a background job, or durable delivery|docs/guide/reference/async-and-cancellation.md#select-background-work-by-delivery-contract
 async-blocking-locks|Adding blocking work or holding a lock across async code|docs/guide/reference/async-and-cancellation.md#blocking-work-and-locks
+async-review|Reviewing a material async, cancellation, task-ownership, or channel change|docs/guide/reference/async-and-cancellation.md#review-checklist
 outbound-http|Changing an outbound HTTP timeout, retry, idempotency, redirect, response limit, or resilience policy|docs/guide/reference/outbound-http.md
 grpc|Adding protobuf, gRPC, Tonic, or streaming RPC contracts|docs/guide/reference/grpc.md
 deployment|Adding a Dockerfile, deployment manifest, image/release workflow, release migration sequence, or platform probe configuration|docs/guide/reference/deployment.md
