@@ -7,13 +7,13 @@ description: Review a substantial Domain model or Domain implementation for busi
 
 Review business correctness and model quality with evidence. Do not replace a code review or invent numeric scores.
 
-1. Read root `AGENTS.md` and the nearest local `AGENTS.md` for every changed path. Match the applicable action-first Context Pointers, record or reuse the active plan's Context Set, and load each canonical owner once. Confirm that the Domain branches select `docs/agents/domain.md#before-exploring-read-these` and `docs/agents/domain.md#choose-the-smallest-domain-workflow`; route only the additional anchored engineering owners needed by the diff.
-2. Read the confirmed glossary, context map, capability documents and ADRs, relevant design output, tests, and actual implementation selected by those owners.
+1. Start from the implementation handoff's Context Pack and Evidence Pack. Verify recorded SHAs against the current diff; rebuild the Context Pack only when the diff reveals an unclassified path/action or a source SHA is stale. Do not replay the implementation discovery transcript.
+2. Read the confirmed glossary, context map, capability documents and ADRs, relevant design output, tests, and actual implementation selected by that context.
 3. Trace representative business scenarios through the model. When code exists, trace one real public path through HTTP, Application, Domain, and the adapter.
 4. Check language consistency, semantic and Aggregate ownership, invariant enforcement, legal transitions, event completeness, and acceptance coverage. Separate acquisition of current time, roles, or external facts from the business decision that uses them: Application or adapters may acquire facts, while pure business rules remain in Domain behavior or a Domain Policy.
 5. Inspect changed public interfaces for primitive business values, swappable same-primitive arguments, invalid states that callers can construct, repeated validation or encoding, boolean state combinations, and anemic data containers.
 6. Check boundaries: private HTTP DTOs and Infrastructure rows must not cross inward; Domain/Application types may be used by outer adapters; external encodings must remain at their owning adapter.
-7. Confirm that durable capability semantics are committed in the location selected by `docs/agents/domain.md#keep-authority-explicit` and agree with the implementation. A substantial model whose only semantic record is `.scratch/`, chat, or code is not Ready.
+7. Confirm that durable capability semantics are committed at the authority selected by the Context Pack and agree with the implementation. A substantial model whose only semantic record is `.scratch/`, chat, or code is not Ready.
 8. Distinguish Domain problems from engineering problems. Route missing language or scenarios to `ddd-discover`, semantic boundaries to `ddd-strategic-design`, invariants and types to `ddd-tactical-design`, and code organization or adapter problems to Project Rules.
 
 Report findings first, ordered by severity:
