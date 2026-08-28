@@ -1,0 +1,27 @@
+docs/guide/reference/performance.md
+  s_d555e9255dba50::t_28de7ed3c03914 9
+docs/guide/README.md
+  s_d555e9255dba50::t_6258f2378ea791 12,29
+docs/guide/testing.md
+  s_d555e9255dba50::t_d8a5be10f2e1ab 57
+docs/guide/reference/async-and-cancellation.md
+  s_d555e9255dba50::t_b88774d33dfc63 9
+docs/guide/reference/idiomatic-rust.md
+  s_d555e9255dba50::t_cf276e0a2f520b 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d70174e82f58c9675fdb512f871a48bfef090dd9",
+  "prompts": {},
+  "sessions": {
+    "s_d555e9255dba50": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0466e-87de-7088-95e0-493c9a969992",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    }
+  }
+}
