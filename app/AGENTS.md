@@ -4,11 +4,7 @@
 
 This crate is the only composition root. It owns command parsing, settings, concrete adapter wiring, Logforth/fastrace initialization, listener startup, and ordered shutdown.
 
-## Context routing
-
-Changing commands, environment sources, settings types, defaults, or configuration validation → read `docs/guide/app/configuration.md`.
-Changing Logforth/fastrace initialization, exporter selection, Resource attributes, trace flushing, or process telemetry → read `docs/guide/observability.md`.
-Changing migrate/serve dispatch, startup order, health wiring, signal handling, resource ownership, or shutdown order → read `docs/guide/runtime.md`.
+Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload configuration, observability, or runtime chapters merely because this crate is touched.
 
 ## Host and composition contract
 
