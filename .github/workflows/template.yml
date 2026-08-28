@@ -74,6 +74,7 @@ jobs:
             .agents/skills/ddd-tactical-design/SKILL.md
             .agents/skills/review-pr/SKILL.md
             docs/agents/domain.md
+            docs/agents/context-routes.tsv
             docs/agents/routed-context-budgets.tsv
             docs/guide/README.md
             docs/guide/app/configuration.md
@@ -100,13 +101,14 @@ jobs:
             docs/guide/runtime.md
             docs/guide/security.md
             scripts/check-agent-context.sh
+            scripts/compile-agent-context.sh
           )
           for path in "${verbatim_governance_files[@]}"; do
             cmp -s "$template_root/$path" "$path"
           done
 
           for heading in \
-            '## Active-plan Context Set' \
+            '## Compiled Context Pack' \
             '## Design checkpoint' \
             '## Coherent implementation slices' \
             '## Governance and documentation changes' \
@@ -138,8 +140,9 @@ jobs:
           done < <(find "$template_root/postmortem" -type f -name '*.md' -print0)
           test -f postmortem/2026-08-27-progressive-disclosure-for-agent-rules.md
           test -f postmortem/2026-08-27-harden-agent-context-routing.md
+          test -f postmortem/2026-08-28-compile-agent-context-packs.md
 
-          test "$(wc -c < AGENTS.md)" -le 10000
+          test "$(wc -c < AGENTS.md)" -le 6000
           bash scripts/check-agent-context.sh
           if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"
