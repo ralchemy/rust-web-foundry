@@ -7,7 +7,7 @@ Tests follow ownership boundaries instead of a generic test pyramid. Put each pr
 | Surface | Location | What it proves |
 |---|---|---|
 | Domain invariants | beside [`Task`](../../crates/domain/src/entities/task.rs) and [`TaskTitle`](../../crates/domain/src/value_objects/task_title.rs) | canonical identity, normalization, length, and rejected characters |
-| Application orchestration | beside [`CreateTask`](../../crates/application/src/use_cases/create_task.rs) | typed input → policy → persistence order and stable failure categories through small fake Ports |
+| Application orchestration | beside [`CreateTask`](../../crates/application/src/use_cases/task/create.rs) | typed input → policy → persistence order and stable failure categories through small fake Ports |
 | HTTP contract | [`routes`](../../crates/http/src/routes/mod.rs) | the installed Router, versioned paths, extractor rejection, status, exact public error envelope, fallbacks, and health mapping |
 | Adapter construction | beside the concrete adapter | local configuration rules that do not require network or database I/O |
 | Production composition | [`app/tests/create_task.rs`](../../app/tests/create_task.rs) | real `app::build`, MySQL, reqwest, the local Policy server, persistence, propagation, and cross-boundary failure behavior |

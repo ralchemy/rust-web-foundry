@@ -1,7 +1,3 @@
-mod create_task;
-mod get_task;
-mod task_view;
+mod task;
 
-pub use create_task::{CreateTask, CreateTaskCommand};
-pub use get_task::GetTask;
-pub use task_view::TaskView;
+pub use task::{CreateTask, CreateTaskCommand, GetTask, TaskView};

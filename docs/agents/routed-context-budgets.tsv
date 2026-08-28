@@ -33,7 +33,7 @@ async-background-work|33000|action|host-runtime
 
 cross-layer-endpoint|60000|path|app/src/lib.rs
 cross-layer-endpoint|60000|path|crates/domain/src/entities/task.rs
-cross-layer-endpoint|60000|path|crates/application/src/use_cases/create_task.rs
+cross-layer-endpoint|60000|path|crates/application/src/use_cases/task/create.rs
 cross-layer-endpoint|60000|path|crates/http/src/routes/mod.rs
 cross-layer-endpoint|60000|path|crates/infrastructure/src/mysql/repositories/task/repository.rs
 cross-layer-endpoint|60000|action|domain-discovery

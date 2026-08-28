@@ -25,7 +25,7 @@ HTTP bytes and headers
 
 The CreateTask handler uses Axum `Json` directly and converts `JsonRejection` through [`ApiError`](../../../crates/http/src/errors/mod.rs). `CreateTaskRequest` uses `serde(deny_unknown_fields)`, and its bounded extractor inherits the installed Router's 8 KiB limit. Each future request DTO owns its unknown-field contract, and each body consumer must confirm whether the shared limit applies. These checks answer whether the wire representation is acceptable; they do not establish a Domain invariant.
 
-The HTTP handler constructs [`TaskTitle`](../../../crates/domain/src/value_objects/task_title.rs) before invoking [`CreateTask`](../../../crates/application/src/use_cases/create_task.rs). Every inbound adapter must perform the same explicit Domain construction at its own trust boundary, while the use case and its Ports accept only the valid type. An invalid title cannot enter Application, reach the external Policy, or reach MySQL.
+The HTTP handler constructs [`TaskTitle`](../../../crates/domain/src/value_objects/task_title.rs) before invoking [`CreateTask`](../../../crates/application/src/use_cases/task/create.rs). Every inbound adapter must perform the same explicit Domain construction at its own trust boundary, while the use case and its Ports accept only the valid type. An invalid title cannot enter Application, reach the external Policy, or reach MySQL.
 
 `TaskPolicy` is deliberately not called validation. It is an external business capability whose answer may depend on current state and may be unavailable. A structurally valid title can therefore be rejected by Policy without becoming an invalid `TaskTitle`.
 
