@@ -4,10 +4,7 @@
 
 This crate owns Task entities, value objects, invariants, and domain errors. Keep code under `entities/`, `value_objects/`, or `errors/`; add a directory only for a new stable domain responsibility.
 
-## Context routing
-
-Changing an Entity, Value Object, invariant, reconstruction path, or Domain Service → read `docs/guide/domain/modeling.md`.
-Adding generic state markers or compile-time state transitions → read `docs/guide/reference/typestate.md`.
+Conditional context for this crate is selected through `docs/agents/context-routes.tsv` and the compiled Context Pack. Do not preload Domain modeling or typestate guidance merely because this crate is touched.
 
 ## Model contract
 
