@@ -1,0 +1,54 @@
+docs/agents/routed-context-budgets.tsv
+  s_174645a0bf46fb::t_630880603bee8c 2-8,10-16,18-23,25-32,34-51
+docs/guide/testing.md
+  s_174645a0bf46fb::t_687969da97e0f9 17-18
+docs/agents/context-routes.tsv
+  s_174645a0bf46fb::t_687969da97e0f9 13,44
+scripts/compile-agent-context.sh
+  s_174645a0bf46fb::t_5added8edf71c6 42
+  s_174645a0bf46fb::t_928edabe9dfec8 38-41,52-53,240-243,311,317
+  s_174645a0bf46fb::t_8063ecc27b7908 28,43-46,51
+  s_174645a0bf46fb::t_cd76a5f2e941c7 168-174
+  s_174645a0bf46fb::t_687969da97e0f9 9,24,303-304
+  s_174645a0bf46fb::t_8643f278460508 298,300,302,306-307
+  s_174645a0bf46fb::t_05b6801c914e30 299,301,305
+  s_174645a0bf46fb::t_694d99aab47dc0 47-50
+scripts/check-agent-context.sh
+  s_174645a0bf46fb::t_bf335fd811897a 166-167
+  s_174645a0bf46fb::t_8063ecc27b7908 186-188
+  s_174645a0bf46fb::t_694d99aab47dc0 192-197
+  s_174645a0bf46fb::t_8643f278460508 242,338,342-344,347,351
+  s_174645a0bf46fb::t_cd76a5f2e941c7 157,234-236
+  s_174645a0bf46fb::t_687969da97e0f9 134,156,158,169,173-174,238-241,243-246,301,341,345-346,348-350
+  s_174645a0bf46fb::t_928edabe9dfec8 154-155,179-185,189-191
+docs/guide/development.md
+  s_174645a0bf46fb::t_687969da97e0f9 71,114-115,152,162,168
+  s_174645a0bf46fb::t_8063ecc27b7908 48
+  s_174645a0bf46fb::t_cd76a5f2e941c7 70
+AGENTS.md.liquid
+  s_174645a0bf46fb::t_8063ecc27b7908 12,19
+  s_174645a0bf46fb::t_efd8c86707fdcc 6,15
+  s_174645a0bf46fb::t_895de985725355 5,14,21,27,39
+  s_174645a0bf46fb::t_cd76a5f2e941c7 11,16,25,31,33,38,44,46
+  s_174645a0bf46fb::t_928edabe9dfec8 13,26,32,34,40-42
+  s_174645a0bf46fb::t_694d99aab47dc0 17
+  s_174645a0bf46fb::t_3d12cf3074fcb7 7
+.github/workflows/template.yml
+  s_174645a0bf46fb::t_687969da97e0f9 147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0b43033f62dc93853b325bf0059d3ab1dae580cd",
+  "prompts": {},
+  "sessions": {
+    "s_174645a0bf46fb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a04873-4ea9-7812-86c4-5653bb7ee1bc",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "oatiz <iamoatiz@gmail.com>"
+    }
+  }
+}
