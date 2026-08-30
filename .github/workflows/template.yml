@@ -144,7 +144,7 @@ jobs:
           grep -Fxq '# template-smoke' README.md
           ! grep -Fq 'Primary design reference: Bulletproof Rust Web' README.md
 
-          test "$(wc -c < AGENTS.md)" -le 6000
+          test "$(wc -c < AGENTS.md)" -le 4000
           bash scripts/check-agent-context.sh
           if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"

@@ -45,7 +45,7 @@ bash scripts/compile-agent-context.sh \
   --action design-checkpoint
 ```
 
-Use `--list-actions` to inspect the finite action vocabulary. The compiler adds root and nearest-local standing briefs from the planned paths, resolves every selected route once, extracts only a referenced Markdown section when an anchor is present, records each source as `path[#anchor]@content-sha`, and refuses a pack above its 60,000-byte default ceiling.
+Use one `--list-actions ERE` query for every planned responsibility and cross-cutting family; `app`, `application`, and `infrastructure` aliases map to differently named action families. Filter by keys/layers, never task nouns. Without an ERE the command prints keys only, preventing an accidental full-description preload. The compiler adds root/local briefs, resolves routes, extracts anchors, drops anchors subsumed by a whole file, records `path[#anchor]@content-sha`, and refuses a Pack above 48,000 bytes. Help/output are its interface; ordinary routing reads neither compiler source nor `context-routes.tsv`.
 
 The default output is the immutable, content-addressed `.scratch/context-packs/<pack_id>.md`. Extend scope without replacing earlier evidence:
 
@@ -66,6 +66,8 @@ bash scripts/compile-agent-context.sh \
   --action http-routing \
   --action ports-adapters
 ```
+
+Pass every final action as well. A freshness-only check with no requested paths/actions reports `coverage=not-checked`; it is not completion evidence.
 
 The legacy `.scratch/context-pack.md` remains untouched. Every Pack is a read view and cache ledger, not an authority. Never edit or promote its prose. If a source SHA changes or scope expands, extend or rebuild and read only newly selected or changed entries.
 
@@ -109,6 +111,8 @@ evidence_pack:
 
 Keep complete successful logs outside the prompt when tooling permits. Carry command, exit status, the failing test or first root cause, and the smallest useful excerpt. A reviewed handoff retains every original finding with its status and owner. If fixes change the frozen diff, record the post-review delta and whether it received conformance review.
 
+The Context Pack is the Standards review source. Axis evidence references it and adds only requirements absent from it; do not copy or attach the Pack's source files again. Keep complete diffs in stable evidence files and pass their paths instead of replaying them through the implementation prompt.
+
 This stage reset is deliberate: exploration, failed attempts, compiler output, and repeated source reads are execution history, not durable review context.
 
 ### Frozen Review Batch
@@ -145,7 +149,7 @@ At each stable slice boundary, run the smallest focused check that can expose a 
 
 Continue automatically after a stable boundary passes. Stop only when a material business decision is unresolved, required authority or external access is missing, or no remaining task can progress independently; report the exact blocker and the evidence already completed.
 
-When one coherent slice would compile a Context Pack above the default 60,000-byte ceiling, split at the smallest stable dependency boundary. Raising the ceiling is a Governance decision, not an implementation convenience.
+When one coherent slice would compile a Context Pack above the default 48,000-byte ceiling, split at the smallest stable dependency boundary. Raising the ceiling is a Governance decision, not an implementation convenience.
 
 ## Governance and documentation changes
 
@@ -155,13 +159,13 @@ Review the complete diff of every changed owner. Account for each changed path a
 
 ### Standing-brief size review
 
-Standing briefs are intentionally limited to always-relevant protection. `scripts/check-agent-context.sh` rejects a root `AGENTS.md` above 6,000 UTF-8 bytes and rejects conditional `→ read` routing in any of the six standing briefs. Conditional routing belongs only in `docs/agents/context-routes.tsv`.
+Standing briefs are intentionally limited to always-relevant protection. `scripts/check-agent-context.sh` rejects a root `AGENTS.md` above 4,000 UTF-8 bytes and rejects conditional `→ read` routing in any of the six standing briefs. Conditional routing belongs only in `docs/agents/context-routes.tsv`.
 
 Do not grow a standing brief merely to improve explanation. Put task-conditional engineering contracts with their existing Guide or Domain owner, add or refine one route action, and keep rationale outside the hot path. A hard rule stays standing only when a routing miss would make ordinary work unsafe.
 
 ## Routed-context budget
 
-Standing-brief size alone does not measure the context an agent actually loads. `docs/agents/routed-context-budgets.tsv` defines representative implementation shapes as unions of standing briefs and routed owner sections. `scripts/check-agent-context.sh` resolves each Markdown anchor, counts every unique source once, and rejects a scenario above its byte ceiling.
+Standing-brief size alone does not measure the context an agent actually loads. `docs/agents/routed-context-budgets.tsv` defines representative implementation shapes as unions of standing briefs and routed owner sections. `scripts/check-agent-context.sh` resolves each Markdown anchor, counts every unique source once, treats a whole file as subsuming its anchors, and rejects a scenario above its byte ceiling.
 
 The budgets are regression ceilings, not instructions to preload every listed source. A real task still selects only actions that match its change. When a ceiling would grow, first shorten standing protection, narrow an owner anchor, remove a redundant route, or split a task. Raising a ceiling requires Governance scope.
 

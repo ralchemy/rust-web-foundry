@@ -131,7 +131,7 @@ check_standing_briefs() {
 
   local root_bytes
   root_bytes=$(wc -c < "$repo_root/AGENTS.md" | tr -d '[:space:]')
-  ((root_bytes <= 6000)) || fail "root AGENTS.md is $root_bytes bytes; keep standing governance at or below 6000"
+  ((root_bytes <= 4000)) || fail "root AGENTS.md is $root_bytes bytes; keep standing governance at or below 4000"
 }
 
 check_large_owner_anchors() {
@@ -151,8 +151,11 @@ check_large_owner_anchors() {
 
 check_compiler_protocol() {
   local fixture="$work_dir/compiler-fixture"
-  local base_pack="$work_dir/base-pack.md" same_pack="$work_dir/same-pack.md"
-  local extended_pack="$work_dir/extended-pack.md" tampered_pack="$work_dir/tampered-pack.md"
+  local unborn_pack="$work_dir/unborn-pack.md" base_pack="$work_dir/base-pack.md"
+  local same_pack="$work_dir/same-pack.md"
+  local extended_pack="$work_dir/extended-pack.md" deduped_pack="$work_dir/deduped-pack.md"
+  local integrity_output="$work_dir/integrity.out"
+  local tampered_pack="$work_dir/tampered-pack.md"
   local base_ref base_id same_id
 
   mkdir -p "$fixture/scripts" "$fixture/docs/agents" "$fixture/docs/guide"
@@ -160,15 +163,38 @@ check_compiler_protocol() {
   printf '# Fixture rules\n' > "$fixture/AGENTS.md"
   printf '%s\n' \
     'governance|Changing governance|docs/guide/development.md#governance-and-documentation-changes' \
+    'ports-adapters|Changing an Application Port|docs/guide/testing.md' \
+    'infra-query|Changing an Infrastructure query|docs/guide/testing.md' \
     'testing-public-path|Changing a public check|docs/guide/testing.md' \
+    'testing-sqlx-offline|Changing SQLx metadata|docs/guide/testing.md#sqlx-offline-is-a-compile-boundary' \
     > "$fixture/docs/agents/context-routes.tsv"
   printf '# Development\n\n## Governance and documentation changes\n\nFixture governance.\n' \
     > "$fixture/docs/guide/development.md"
-  printf '# Testing\n\nFixture testing.\n' > "$fixture/docs/guide/testing.md"
+  printf '# Testing\n\nFixture testing.\n\n## SQLx offline is a compile boundary\n\nFixture SQLx.\n' \
+    > "$fixture/docs/guide/testing.md"
   printf 'tracked baseline\n' > "$fixture/tracked.txt"
   printf 'unstaged baseline\n' > "$fixture/unstaged.txt"
 
   git -C "$fixture" init -q
+  bash "$fixture/scripts/compile-agent-context.sh" \
+    --goal unborn --path tracked.txt --action governance --output "$unborn_pack" >/dev/null
+  grep -Fqx -- '- generated_at_commit: working-tree' "$unborn_pack" \
+    || fail "context compiler emitted an invalid unborn-HEAD marker"
+  bash "$fixture/scripts/compile-agent-context.sh" --list-actions '^testing-' \
+    | grep -Fq 'testing-sqlx-offline' \
+    || fail "context compiler action filtering omitted a matching action"
+  if bash "$fixture/scripts/compile-agent-context.sh" --list-actions | grep -Fq 'Changing '; then
+    fail "unfiltered action listing emitted descriptions"
+  fi
+  if bash "$fixture/scripts/compile-agent-context.sh" --list-actions '^testing-' | grep -Fq governance; then
+    fail "context compiler action filtering retained a nonmatching action"
+  fi
+  bash "$fixture/scripts/compile-agent-context.sh" --list-actions '^application$' \
+    | grep -Fq 'ports-adapters' \
+    || fail "context compiler did not map the Application layer alias"
+  bash "$fixture/scripts/compile-agent-context.sh" --list-actions '^infrastructure$' \
+    | grep -Fq 'infra-query' \
+    || fail "context compiler did not map the Infrastructure layer alias"
   git -C "$fixture" add .
   git -C "$fixture" -c user.name=fixture -c user.email=fixture@example.invalid \
     -c commit.gpgSign=false -c core.hooksPath=/dev/null commit -qm baseline
@@ -205,6 +231,19 @@ check_compiler_protocol() {
   bash "$fixture/scripts/compile-agent-context.sh" \
     --verify-pack "$extended_pack" --base "$base_ref" \
     --action governance --action testing-public-path >/dev/null
+  bash "$fixture/scripts/compile-agent-context.sh" --verify-pack "$extended_pack" > "$integrity_output"
+  grep -Fq 'coverage=not-checked' "$integrity_output" \
+    || fail "context compiler reported empty requested scope as coverage"
+
+  bash "$fixture/scripts/compile-agent-context.sh" \
+    --goal deduped --path tracked.txt \
+    --action testing-public-path --action testing-sqlx-offline \
+    --output "$deduped_pack" >/dev/null
+  [[ "$(grep -Fc "## Source: \`docs/guide/testing.md\`" "$deduped_pack")" -eq 1 ]] \
+    || fail "context compiler did not emit one whole-file testing source"
+  if grep -Fq 'docs/guide/testing.md#sqlx-offline-is-a-compile-boundary@' "$deduped_pack"; then
+    fail "context compiler retained an anchor subsumed by a whole-file source"
+  fi
 
   if bash "$fixture/scripts/compile-agent-context.sh" \
     --verify-pack "$base_pack" --base "$base_ref" --action governance >/dev/null 2>&1; then
@@ -259,12 +298,9 @@ check_review_loader() {
 }
 
 add_budget_source() {
-  local scenario=$1 source=$2 bytes current
+  local scenario=$1 source=$2
   if ! grep -Fxq "$source" "$work_dir/$scenario.sources"; then
     printf '%s\n' "$source" >> "$work_dir/$scenario.sources"
-    bytes=$(source_bytes "$source")
-    current=$(cat "$work_dir/$scenario.total")
-    printf '%s\n' "$((current + bytes))" > "$work_dir/$scenario.total"
   fi
 }
 
@@ -282,7 +318,6 @@ check_budgets() {
 
     if [[ ! -f "$work_dir/$scenario.limit" ]]; then
       printf '%s\n' "$max_bytes" > "$work_dir/$scenario.limit"
-      printf '0\n' > "$work_dir/$scenario.total"
       : > "$work_dir/$scenario.sources"
       printf '%s\n' "$scenario" >> "$work_dir/scenarios"
     elif [[ "$(cat "$work_dir/$scenario.limit")" != "$max_bytes" ]]; then
@@ -300,10 +335,20 @@ check_budgets() {
 
   [[ -s "$work_dir/scenarios" ]] || fail "budget manifest contains no scenarios"
 
-  local failed=0 limit total
+  local failed=0 limit total source relative scenario_sources whole_sources
   while IFS= read -r scenario; do
     limit=$(cat "$work_dir/$scenario.limit")
-    total=$(cat "$work_dir/$scenario.total")
+    total=0
+    scenario_sources="$work_dir/$scenario.sources"
+    whole_sources="$work_dir/$scenario.whole-sources"
+    awk 'index($0, "#") == 0' "$scenario_sources" > "$whole_sources"
+    while IFS= read -r source; do
+      relative=${source%%#*}
+      if [[ "$source" == *"#"* ]] && grep -Fxq "$relative" "$whole_sources"; then
+        continue
+      fi
+      total=$((total + $(source_bytes "$source")))
+    done < "$scenario_sources"
     printf 'routed context %-24s %6d / %6d bytes\n' "$scenario" "$total" "$limit"
     if ((total > limit)); then failed=1; fi
   done < "$work_dir/scenarios"

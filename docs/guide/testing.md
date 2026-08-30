@@ -14,6 +14,8 @@ Tests follow ownership boundaries instead of a generic test pyramid. Put each pr
 
 Do not test private helpers when the installed Router or use case can expose the same failure. Do not move every test into `app/tests/`: a cross-crate test is heavier and often hides which owner broke.
 
+Assert exact public status and JSON through the installed Router. Use the real composition path only for cross-crate adapter contracts. While editing, run the smallest owning test, then `just check`; add `just verify` when configuration, migrations, lifecycle, composition, or the installed route graph changes.
+
 ## Public HTTP contract
 
 HTTP tests send requests through the Router returned by `http::router`. The error table asserts the complete JSON value, not only its status or error code:

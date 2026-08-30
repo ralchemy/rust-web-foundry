@@ -2,50 +2,45 @@
 
 ## Authority
 
-- Root and nearest-local `AGENTS.md` files are the standing authority for governance, path responsibility, and hard protection.
-- `docs/agents/context-routes.tsv` is the single routing catalogue for conditional engineering context. Guide and Domain documents reached from it remain their own canonical owners; the catalogue only decides when they are needed.
-- Source, manifests, tests, Just recipes, and CI own executable facts. If a standing rule, routed owner, and executable fact conflict, stop and report the authority seam instead of choosing the convenient interpretation.
-- Optional Skills and orchestration frameworks are procedures only. They never override repository authority.
+- Root and nearest-local `AGENTS.md` own standing governance, path responsibility, and hard protection.
+- `docs/agents/context-routes.tsv` selects conditional owners; code, tests, manifests, Just recipes, and CI own executable facts.
+- Stop on authority conflicts. Skills never override repository authority.
 
 ## Context contract
 
-- Before a production edit, the active context contains one bounded Context Pack whose Context Set covers every planned touched path and applicable action. `scripts/compile-agent-context.sh` is the repository provider; reuse a current pack when its recorded refs remain current and cover the work.
-- `bash scripts/compile-agent-context.sh --list-actions` exposes the finite action vocabulary. An action applies only when the task performs the described change; topic similarity is insufficient.
-- When planned or touched paths, action classes, or recorded source SHAs change, rebuild the pack and read only newly selected `ref@content-sha` entries. A pack is a generated read view, never a second authority.
-- After reading the Pack, keep a short path-and-proof checklist; update it with scope.
+- This injected file is active; do not tool-read it. Admission classifies scope, not implementation: use one exact symbol per search, at most 10 matches/one context line; never inventory trees, bundle regex alternatives, or grep broad Domain nouns. Do not read a file merely to list it as planned; an owning directory covers unknown files.
+- Run `bash scripts/compile-agent-context.sh`; use one combined action filter for every planned layer plus applicable `design|implementation|architecture|testing|rust|sqlx` families. `app`, `application`, and `infrastructure` are layer aliases; never filter by task nouns or read `context-routes.tsv`. Do not read compiler source, local `AGENTS.md`, or routed owners separately.
+- Before editing production, compile or reuse one Pack covering every planned path and applicable action. Actions match their described change shape, not topic similarity.
+- Read the Pack once. A whole file subsumes its anchors; reload a source only when its recorded SHA is stale.
+- On a path, action, or SHA change, rebuild or extend and read only changed entries. Update the path-and-proof checklist.
+- Verify with every final `--path` and `--action` (or `--base`); `coverage=not-checked` is not handoff evidence.
+- Batch probes. Keep success output to one line and full logs/diffs outside the prompt.
 
-If the compiler is unavailable, perform the same selection manually from `docs/agents/context-routes.tsv`: root rules + nearest-local rules for every touched path + each selected routed owner, each unique source once. Do not replace deterministic selection with broad Guide reads.
+Only if the compiler is unavailable, resolve `context-routes.tsv`: root + nearest-local rules per touched path + selected owners, each source once. Broad Guide reads are not a fallback.
 
-The default compiled-context ceiling is 60,000 UTF-8 bytes. If a coherent implementation slice exceeds it, split the task at a stable dependency boundary rather than raising the ceiling for convenience.
+The default ceiling is 48,000 UTF-8 bytes. Split oversized work at a stable dependency boundary; never raise it for convenience.
 
 ## Change contract
 
-- A business-meaning change resolves affected actors, terms, rules, and exceptional outcomes in their Domain owner before production editing; business-meaning-neutral changes proceed without Domain modeling.
-- Material business facts absent from the request or an authoritative Domain artifact remain unresolved. A feature name does not define enum members, defaults, permissions, temporal rules, idempotency, or exceptional behavior.
-- When the nearest public path exposes such a fact, return `needs-decision` before routed context or later Skills.
-- New files, abstractions, and dependencies reuse the owners on the nearest existing public path unless the requested behavior establishes a new responsibility.
-- Before changing a shared interface or Port, account for every caller and implementation.
-- A behavior change carries the smallest regression proof through its public seam.
+- Resolve actors, terms, rules, and exceptions in their Domain owner before editing business behavior. Absent facts stay unresolved; a feature name defines no states, defaults, permissions, time rules, or idempotency. Return `needs-decision` before routing when the public path exposes one.
+- Reuse nearest-path owners. Before changing a shared interface or Port, account for every caller and implementation.
+- Prove behavior through the smallest affected public seam.
 
 ## Hard protection
 
-- Preserve inward workspace dependency direction and the responsibility split declared by local `AGENTS.md` files. A preference for fewer files, types, or abstractions never overrides an owned business type or boundary.
-- Do not delete, weaken, or move an existing assertion out of its exercised path merely to pass a gate. Reproduce unexpected failures on the untouched baseline or show that requested behavior intentionally replaces the old contract.
-- Completion evidence for a gate changed by the current work includes its complete diff and retained proof. The caller or active workflow decides whether a separate review is required.
-- Fix violations introduced or exposed in the touched responsibility. Record unrelated material debt without expanding scope unless it blocks required verification.
-- Guide, Domain authority, context routing, budgets, and governance checks are read-only during ordinary implementation. Changing them requires explicit Governance or Documentation scope and the `governance` action.
+- Preserve inward dependencies and responsibility boundaries; simplicity never overrides an owned business type.
+- Never weaken or move an assertion to pass a gate. Reproduce failures on the untouched baseline or show that new behavior replaces the old contract.
+- Fix touched-responsibility violations; record unrelated debt unless it blocks verification.
+- Guide/Domain authority, routing, budgets, and governance checks need explicit Governance or Documentation scope plus the `governance` action.
 
 ## Verification and handoff
 
-- Production-code completion evidence includes the smallest focused owning test and `just check`; it also includes `just verify` when configuration, migrations, lifecycle, checked SQL, composition, or installed routes changed.
-- Check evidence records the command, exit status, failing test or first root cause, and log path. Successful logs remain outside the prompt.
-- An implementation handoff, when produced, carries a compact Evidence Pack: goal, Context Pack identity, changed paths, material decisions, public acceptance path, checks with outcomes, and unresolved blockers.
-- When a caller or active workflow requests conformance review, the reviewer receives the request, Context Pack, Evidence Pack, and complete diff; it reloads source authority only when a recorded SHA is stale or the diff reveals an unclassified path/action. The implementation session does not replay all governance and Guide material before handoff.
-- A frozen Review Batch is evidence-only. Before classifying findings, fixing, handing off, or completing, load its stable Standards and Spec artifacts with `scripts/load-review-reports.sh` and require a visible, untruncated `reports_loaded: 2/2` for one batch/snapshot. Missing evidence makes the review incomplete.
-- A reviewed handoff retains all findings plus reviewed and post-review diff identities.
+- Evidence includes the smallest owning test and `just check`; add `just verify` for configuration, migrations, lifecycle, checked SQL, composition, or routes.
+- Record command, outcome, first root cause, and log path; keep successful logs outside the prompt.
+- Evidence Pack: goal, Context Pack ID, changed paths, decisions, public acceptance path, checks, blockers, and paths to full diff/log files.
+- Review gets the request, Pack, Evidence Pack, diff path, and nonduplicated axis evidence. Reload only stale or unclassified authority.
+- Before classifying/fixing/completing, load frozen reports with `scripts/load-review-reports.sh`; require untruncated `reports_loaded: 2/2` and retain findings plus diff IDs.
 
-## Optional agent tooling
+## Optional tooling
 
-- Repository Skills may automate planning, DDD outcomes, endpoint work, migrations, or review, but they must consume the same compiled Context Pack protocol rather than preload broad Guide chapters.
-- Load an optional Skill only when execution reaches its explicit run, use, or invoke step.
-- A subagent receives the goal, relevant evidence, current Context Set, and the smallest source slice required for its assignment, not the parent agent's discovery transcript or full conversation history.
+- Load Skills only at explicit run/use/invoke steps; give subagents only the goal, Context Set, evidence, and smallest source slice.

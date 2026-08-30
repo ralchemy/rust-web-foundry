@@ -6,7 +6,7 @@ routes="$repo_root/docs/agents/context-routes.tsv"
 output=""
 output_set=0
 goal=""
-max_bytes=${AGENT_CONTEXT_MAX_BYTES:-60000}
+max_bytes=${AGENT_CONTEXT_MAX_BYTES:-48000}
 extend_from=""
 verify_pack=""
 base_ref=""
@@ -21,11 +21,11 @@ usage: scripts/compile-agent-context.sh [options]
   --path PATH         planned or final touched path; repeat as needed
   --action KEY        action key from docs/agents/context-routes.tsv; repeat as needed
   --output PATH       explicit immutable output path
-  --max-bytes N       hard UTF-8 byte ceiling (default 60000)
+  --max-bytes N       hard UTF-8 byte ceiling (default 48000)
   --extend-from PACK  inherit paths/actions from an earlier pack
   --verify-pack PACK  verify identity, freshness, and declared coverage
   --base REF          with --verify-pack, add changed and untracked paths since REF
-  --list-actions      print known action keys and descriptions
+  --list-actions [ERE]  print keys; with ERE, print matching key/layer details
 EOF
 }
 
@@ -35,7 +35,22 @@ fail() {
 }
 
 list_actions() {
-  awk -F'|' '!/^#/ && NF >= 3 { printf "%-30s %s\n", $1, $2 }' "$routes"
+  local filter=${1:-}
+  awk -F'|' -v filter="$filter" '
+    BEGIN { filter = tolower(filter) }
+    !/^#/ && NF >= 3 {
+      key = tolower($1)
+      if (filter == "") {
+        print $1
+        next
+      }
+      layer = ""
+      if (key ~ /^host-/) layer = "app"
+      else if (key ~ /^ports-/) layer = "application"
+      else if (key ~ /^infra-/) layer = "infrastructure"
+      if (key ~ filter || layer ~ filter) printf "%-30s %s\n", $1, $2
+    }
+  ' "$routes"
 }
 
 resolve_file() {
@@ -150,8 +165,13 @@ verify_context_pack() {
     ((source_count += 1))
   done < "$work_dir/pack-context"
 
-  printf 'context_coverage: 100%% paths=%d/%d actions=%d/%d sources=%d pack_id=%s\n' \
-    "$path_count" "$path_count" "$action_count" "$action_count" "$source_count" "$(recorded_pack_id "$pack")"
+  if ((path_count == 0 && action_count == 0)); then
+    printf 'context_integrity: sources=%d pack_id=%s coverage=not-checked\n' \
+      "$source_count" "$(recorded_pack_id "$pack")"
+  else
+    printf 'context_coverage: 100%% paths=%d/%d actions=%d/%d sources=%d pack_id=%s\n' \
+      "$path_count" "$path_count" "$action_count" "$action_count" "$source_count" "$(recorded_pack_id "$pack")"
+  fi
 }
 
 slugify_heading() {
@@ -217,7 +237,10 @@ while (($#)); do
     --extend-from) extend_from=${2:?missing pack}; shift 2 ;;
     --verify-pack) verify_pack=${2:?missing pack}; shift 2 ;;
     --base) base_ref=${2:?missing ref}; shift 2 ;;
-    --list-actions) list_actions; exit 0 ;;
+    --list-actions)
+      if (($# > 1)) && [[ "$2" != --* ]]; then list_actions "$2"; else list_actions; fi
+      exit 0
+      ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown argument: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -272,15 +295,26 @@ for action in "${actions[@]}"; do
   printf '%s\n' "$matches" >> "$sources"
 done
 sort -u "$sources" -o "$sources"
+all_sources="$work_dir/all-sources"
+whole_sources="$work_dir/whole-sources"
+mv "$sources" "$all_sources"
+awk 'index($0, "#") == 0' "$all_sources" > "$whole_sources"
+: > "$sources"
+while IFS= read -r source; do
+  relative=${source%%#*}
+  if [[ "$source" == *"#"* ]] && grep -Fxq "$relative" "$whole_sources"; then continue; fi
+  printf '%s\n' "$source" >> "$sources"
+done < "$all_sources"
 
 tmp="$work_dir/pack-with-placeholder"
 resolved="$work_dir/pack"
+generated_at_commit=$(git -C "$repo_root" rev-parse --verify 'HEAD^{commit}' 2>/dev/null || echo working-tree)
 {
   echo '# Compiled Agent Context Pack'
   echo
   printf -- '- pack_id: __PACK_ID__\n'
   printf -- '- goal: %s\n' "${goal:-unspecified}"
-  printf -- '- generated_at_commit: %s\n' "$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo working-tree)"
+  printf -- '- generated_at_commit: %s\n' "$generated_at_commit"
   [[ -z "$extend_id" ]] || printf -- '- extends_pack: %s\n' "$extend_id"
   printf -- '- max_bytes: %s\n' "$max_bytes"
   echo '- planned_paths:'

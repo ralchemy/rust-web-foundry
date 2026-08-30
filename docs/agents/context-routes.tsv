@@ -10,7 +10,7 @@ security-secrets|Handling a secret or changing telemetry redaction|docs/guide/se
 security-exposure|Changing network exposure, listener binding, or transport-security ownership|docs/guide/security.md#local-exposure
 security-capability|Adding a security capability that the baseline does not install|docs/guide/security.md#capabilities-not-installed
 security-extension|Verifying or extending an added security capability|docs/guide/security.md#extension-and-verification
-testing-public-path|Changing public-path acceptance evidence, test placement, a public Just/CI/architecture/acceptance gate, or other cross-crate evidence|docs/guide/testing.md
+testing-public-path|Changing public-path acceptance evidence, test placement, a public Just/CI/architecture/acceptance gate, or other cross-crate evidence|docs/guide/testing.md#evidence-by-boundary
 testing-sqlx-offline|Changing SQLx metadata, offline query compilation, or the checked-query compile boundary|docs/guide/testing.md#sqlx-offline-is-a-compile-boundary
 design-checkpoint|Changing a public workflow, Domain behavior, Port, database schema or index, persistence contract, or external integration|docs/guide/development.md#design-checkpoint
 implementation-slices|Implementing a confirmed design through multiple dependent tasks|docs/guide/development.md#coherent-implementation-slices
@@ -41,7 +41,7 @@ domain-capability-doc|Writing a capability document|docs/agents/domain.md#capabi
 domain-modeling|Changing an Entity, Value Object, invariant, reconstruction path, or Domain Service|docs/guide/domain/modeling.md
 typestate|Adding generic state markers or compile-time state transitions|docs/guide/reference/typestate.md
 http-state|Changing Router state, handler state extraction, request extensions, or dependency construction|docs/guide/http/state-management.md
-http-routing|Changing routes, handlers, extractors, response DTOs, route-family composition, or Router fallbacks|docs/guide/http/routing-and-handlers.md
+http-routing|Changing routes, handlers, extractors, response DTOs, route-family composition, or Router fallbacks|docs/guide/http/routing-and-handlers.md#growth-and-verification
 http-domain-validation|Changing whether a rule belongs to transport validation or Domain construction|docs/guide/http/validation.md#do-not-duplicate-domain-invariants-on-dtos
 http-dto-validation|Adding or changing DTO validator rules or axum-valid rejection mapping|docs/guide/http/validation.md#use-axum-valid-for-transport-dtos
 http-public-errors|Changing field-level public errors or the fixed validation envelope|docs/guide/http/validation.md#keep-the-public-error-contract-stable
