@@ -42,8 +42,7 @@ The local server is a controllable peer, not a mocked reqwest client. This keeps
 Running the integration test directly requires an explicit database URL:
 
 ```sh
-TEST_DATABASE_URL=mysql://app:app@127.0.0.1:3306/app \
-  cargo test -p {{ project-name }} --test create_task --all-features --locked
+TEST_DATABASE_URL=mysql://app:app@127.0.0.1:3306/app   cargo test -p {{ project-name }} --test create_task --all-features --locked
 ```
 
 ## SQLx offline is a compile boundary
@@ -56,13 +55,17 @@ After changing a migration or checked query, start MySQL and run `just sqlx-prep
 
 | Command | Database contract |
 |---|---|
-| `just architecture` | Requires no running MySQL; checks the fixed workspace dependency direction, forbidden outer-framework dependencies in Domain and Application, the objective multi-workflow threshold for top-level use-case files, Skill adoption of the Context Pack protocol, anchored routing for every conditional owner at or above 7,500 bytes, and representative routed-context byte ceilings from `docs/agents/routed-context-budgets.tsv`. It does not attempt to judge DDD ownership, type quality, naming, file placement, or other semantic module boundaries. |
+| `just architecture` | Requires no running MySQL; checks the fixed workspace dependency direction, forbidden outer-framework dependencies in Domain and Application, the objective multi-workflow threshold for top-level use-case files, and the small code-first project/review contract. It does not attempt to judge semantic ownership or generic Rust style. |
 | `just check` | Requires no running MySQL; runs `architecture`, format, Clippy, all DB-free unit/Router tests, and app library/binary tests. Clippy may compile the integration target but does not execute it. |
 | `just test` | Runs every workspace test and requires an existing MySQL at `TEST_DATABASE_URL` or the documented local default. |
 | `just ci` | Assumes MySQL already exists; runs `check`, the real integration test, explicit migration, SQLx metadata verification, live HTTP smoke, propagation, and graceful shutdown. |
 | `just verify` | Starts local MySQL, delegates to `just ci`, and always stops Compose while preserving its named volume. |
 
 Use the smallest focused test while editing, then run `just check`. Run `just verify` when configuration, migrations, lifecycle, composition, or the installed route graph changes. Generated CI uses `just ci` with a MySQL 8.4 service, so local and remote acceptance share the same behavior gate.
+
+## Rust review
+
+Test placement and coverage topology are project facts. A fresh review additionally applies the pinned `rust-skills` testing rules where relevant, subject to `.agents/rust-skills-overrides.md`. Generic recommendations do not justify adding mockall, snapshot testing, property testing, testcontainers, or another test framework without a demonstrated gap.
 
 ## Deliberately absent
 

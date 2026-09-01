@@ -1,0 +1,19 @@
+---
+name: review-rust-web
+description: Review a completed Rust Web Foundry change against its requested behavior, Clean Architecture and selected stack, and the pinned rust-skills baseline. Run in a fresh review session.
+disable-model-invocation: true
+---
+
+# Review a completed change
+
+Use this Skill only after implementation. Start from the request/specification and a fixed diff or the complete working-tree delta; do not replay the implementation transcript.
+
+1. Read the request, changed code and tests, root `AGENTS.md`, `docs/guide/stack.md`, and `.agents/rust-skills-overrides.md`.
+2. Run `bash scripts/install-rust-skills.sh --check`. If the pinned checkout is absent, run `bash scripts/install-rust-skills.sh`; if it cannot be installed, report the review as incomplete rather than substituting another ruleset.
+3. Read `.scratch/rust-skills/SKILL.md` as an index, then read only the detailed rule files relevant to the diff. The project contract, manifests, existing integrations, and override file win over generic recommendations.
+4. Review three independent axes:
+   - **Behavior:** requested outcomes, missing paths, unintended behavior, error/public contracts, and tests that could not fail for a wrong implementation.
+   - **Project architecture and stack:** inward dependencies, layer responsibility, adapter-owned representations, production composition, selected libraries, SQLx metadata/migrations, security boundaries, and lifecycle where changed.
+   - **Rust quality:** applicable pinned `rust-skills` rules for ownership, errors, async behavior, type/API design, Serde, testing, observability, performance, and anti-patterns.
+5. Reconcile evidence with the smallest affected tests and `just check`; use `just verify` when SQL, migrations, routes/composition, configuration, or runtime behavior changed. Do not repeat formatting or lint findings already rejected mechanically unless a check is failing.
+6. Report actionable findings first. Each finding includes severity (`error`, `warning`, or `advisory`), axis, `path:line`, the violated project contract or rust-skills rule ID when applicable, why it matters, and the smallest corrective action. Clearly state when an axis has no findings and list verification not run.

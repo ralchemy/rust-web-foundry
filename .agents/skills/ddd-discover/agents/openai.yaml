@@ -1,4 +1,0 @@
-interface:
-  display_name: "Discover Domain"
-  short_description: "Clarify domain facts, scenarios, and language"
-  default_prompt: "Use $ddd-discover to clarify this business capability before implementation."

@@ -2,10 +2,7 @@
 
 Runnable Axum reference service generated from the Rust Web Foundry Project Template.
 
-The generated service intentionally includes a canonical Task create-and-lookup vertical slice. It
-demonstrates Clean Architecture boundaries, explicit boundary conversions, private database and
-wire models, checked SQLx persistence, outbound Ports, HTTP contracts, observability, and process
-lifecycle. Task is a reference slice, not a universal task-management domain model.
+The generated service includes a canonical Task create-and-lookup vertical slice. It demonstrates Clean Architecture boundaries, explicit boundary conversions, private database and wire models, checked SQLx persistence, outbound Ports, HTTP contracts, observability, and process lifecycle. Task is a reference slice, not a universal task-management domain model.
 
 ## Prerequisites
 
@@ -48,7 +45,17 @@ infrastructure ──┘
 app ──> http + infrastructure + application + domain
 ```
 
-See [architecture](docs/guide/architecture/README.md), [project structure](docs/guide/architecture/project-structure.md), the [Task flow](docs/guide/task-flow.md), and the [Idiomatic Rust code contract](docs/guide/reference/idiomatic-rust.md).
+Source, tests, manifests, migrations, and quality commands are the executable specification. Start changes from the nearest complete production path; use the Guide only for a concrete unanswered design question. See [architecture](docs/guide/architecture/README.md), the [selected stack](docs/guide/stack.md), the [Task flow](docs/guide/task-flow.md), and [development](docs/guide/development.md).
+
+## Rust review
+
+The project pins `leonardomso/rust-skills` for fresh, review-only use and applies project-specific overrides for Clean Architecture and the selected stack:
+
+```sh
+bash scripts/install-rust-skills.sh
+```
+
+Then explicitly invoke `.agents/skills/review-rust-web/SKILL.md` in a fresh review session with the request and complete diff. See [Reviewing changes](docs/guide/reviewing.md).
 
 ## Commands
 
@@ -60,7 +67,7 @@ See [architecture](docs/guide/architecture/README.md), [project structure](docs/
 | `just sqlx-prepare` | Apply development migrations and refresh `.sqlx` query metadata |
 | `just serve` | Start the production server path |
 | `just test` | Run every workspace test against an existing MySQL |
-| `just architecture` | Check workspace dependency direction and inner-crate framework boundaries |
+| `just architecture` | Check workspace dependencies and the small project/review contract |
 | `just check` | Run architecture checks, format, Clippy, and DB-free tests |
 | `just ci` | Run checks, MySQL integration, query verification, and live smoke against an existing MySQL |
 | `just verify` | Start MySQL and prove the fresh service end to end |

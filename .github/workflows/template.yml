@@ -55,76 +55,61 @@ jobs:
           test -f "$template_root/AGENTS.md"
           test "$(find "$template_root" -type f -name AGENTS.md | wc -l)" -eq 1
           test "$(find "$template_root/.agents/skills" -type f -name SKILL.md | wc -l)" -eq 0
+
           cargo generate --path . --name template-smoke --destination "$RUNNER_TEMP" --vcs none
           cd "$RUNNER_TEMP/template-smoke"
+
           test -f .github/workflows/ci.yml
           test "$(find crates -name Cargo.toml | wc -l)" -eq 4
           test -f app/Cargo.toml
+          test "$(find . -type f -name AGENTS.md | wc -l)" -eq 1
+          test "$(find .agents/skills -type f -name SKILL.md | wc -l)" -eq 1
 
-          rendered_governance_files=(
-            AGENTS.md
+          cmp -s "$template_root/AGENTS.md.liquid" AGENTS.md
+          cmp -s \
+            "$template_root/.agents/skills/review-rust-web/SKILL.md.liquid" \
+            .agents/skills/review-rust-web/SKILL.md
+
+          verbatim_payload_files=(
+            .agents/rust-skills.lock
+            .agents/rust-skills-overrides.md
+            docs/guide/README.md
+            docs/guide/architecture/README.md
+            docs/guide/architecture/project-structure.md
+            docs/guide/development.md
+            docs/guide/domain/modeling.md
+            docs/guide/reviewing.md
+            docs/guide/stack.md
+            docs/guide/reference/README.md
+            docs/guide/reference/idiomatic-rust.md
+            scripts/check-agent-context.sh
+            scripts/check-project-contract.sh
+            scripts/check-idiomatic-rust.sh
+            scripts/install-rust-skills.sh
+          )
+          for path in "${verbatim_payload_files[@]}"; do
+            cmp -s "$template_root/$path" "$path"
+          done
+
+          legacy_paths=(
             app/AGENTS.md
             crates/application/AGENTS.md
             crates/domain/AGENTS.md
             crates/http/AGENTS.md
             crates/infrastructure/AGENTS.md
-            .agents/skills/add-endpoint/SKILL.md
-            .agents/skills/add-migration/SKILL.md
-            .agents/skills/ddd-discover/SKILL.md
-            .agents/skills/ddd-model-review/SKILL.md
-            .agents/skills/ddd-strategic-design/SKILL.md
-            .agents/skills/ddd-tactical-design/SKILL.md
-            .agents/skills/review-pr/SKILL.md
-          )
-          for path in "${rendered_governance_files[@]}"; do
-            cmp -s "$template_root/$path.liquid" "$path"
-          done
-
-          verbatim_governance_files=(
-            docs/agents/domain.md
-            docs/agents/context-routes.tsv
-            docs/agents/routed-context-budgets.tsv
-            docs/guide/README.md
-            docs/guide/app/configuration.md
-            docs/guide/architecture/README.md
-            docs/guide/architecture/error-handling.md
-            docs/guide/architecture/ports-and-adapters.md
-            docs/guide/architecture/project-structure.md
-            docs/guide/development.md
-            docs/guide/domain/modeling.md
-            docs/guide/http/middleware.md
-            docs/guide/http/routing-and-handlers.md
-            docs/guide/http/state-management.md
-            docs/guide/http/validation.md
-            docs/guide/infrastructure/database.md
-            docs/guide/observability.md
-            docs/guide/reference/async-and-cancellation.md
-            docs/guide/reference/authentication-and-authorization.md
-            docs/guide/reference/deployment.md
-            docs/guide/reference/grpc.md
-            docs/guide/reference/idiomatic-rust.md
-            docs/guide/reference/outbound-http.md
-            docs/guide/reference/performance.md
-            docs/guide/reference/typestate.md
-            docs/guide/runtime.md
-            docs/guide/security.md
-            scripts/check-agent-context.sh
+            docs/agents
             scripts/compile-agent-context.sh
             scripts/load-review-reports.sh
+            .agents/skills/add-endpoint
+            .agents/skills/add-migration
+            .agents/skills/ddd-discover
+            .agents/skills/ddd-model-review
+            .agents/skills/ddd-strategic-design
+            .agents/skills/ddd-tactical-design
+            .agents/skills/review-pr
           )
-          for path in "${verbatim_governance_files[@]}"; do
-            cmp -s "$template_root/$path" "$path"
-          done
-
-          for heading in \
-            '## Compiled Context Pack' \
-            '## Design checkpoint' \
-            '## Coherent implementation slices' \
-            '## Governance and documentation changes' \
-            '## Routed-context budget' \
-            '## Dependency selection'
-          do
-            grep -Fqx "$heading" docs/guide/development.md
+          for path in "${legacy_paths[@]}"; do
+            test ! -e "$path"
           done
 
           grep -Fq '{{ project-name }}' "$template_root/docs/guide/testing.md"
@@ -144,7 +129,10 @@ jobs:
           grep -Fxq '# template-smoke' README.md
           ! grep -Fq 'Primary design reference: Bulletproof Rust Web' README.md
 
-          test "$(wc -c < AGENTS.md)" -le 4000
+          test "$(wc -c < AGENTS.md)" -le 2000
+          grep -Fq 'fd2a861ab0406a4ac536a55274d14ea6fd1ca9c9' .agents/rust-skills.lock
+          bash scripts/install-rust-skills.sh --metadata \
+            | grep -Fq 'version=1.5.1'
           bash scripts/check-agent-context.sh
           if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"
