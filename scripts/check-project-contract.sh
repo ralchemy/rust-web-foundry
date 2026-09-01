@@ -49,8 +49,11 @@ grep -Fq '.agents/rust-skills-overrides.md' "$skill" \
   || fail "review Skill must apply project overrides"
 
 metadata=$(bash "$repo_root/scripts/install-rust-skills.sh" --metadata)
-grep -Fq 'commit=fd2a861ab0406a4ac536a55274d14ea6fd1ca9c9' <<<"$metadata" \
-  || fail "unexpected rust-skills pin"
+repository=$(sed -nE 's/^repository=([^[:space:]]+)$/\1/p' "$repo_root/.agents/rust-skills.lock")
+commit=$(sed -nE 's/^commit=([0-9a-f]{40})$/\1/p' "$repo_root/.agents/rust-skills.lock")
+[[ -n "$repository" && -n "$commit" ]] || fail "invalid rust-skills lock metadata"
+grep -Fq "repository=$repository" <<<"$metadata" || fail "installer repository does not match lock"
+grep -Fq "commit=$commit" <<<"$metadata" || fail "installer commit does not match lock"
 
 for file in \
   "$repo_root/AGENTS.md" \

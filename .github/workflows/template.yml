@@ -133,6 +133,9 @@ jobs:
           grep -Fq 'fd2a861ab0406a4ac536a55274d14ea6fd1ca9c9' .agents/rust-skills.lock
           bash scripts/install-rust-skills.sh --metadata \
             | grep -Fq 'version=1.5.1'
+          bash scripts/install-rust-skills.sh
+          bash scripts/install-rust-skills.sh --check \
+            | grep -Fq 'commit=fd2a861ab0406a4ac536a55274d14ea6fd1ca9c9'
           bash scripts/check-agent-context.sh
           if grep -RInE --exclude-dir=.git '\{\{ *(project-name|crate_name)|\{% *(raw|endraw)' .; then
             echo "unresolved template syntax"
