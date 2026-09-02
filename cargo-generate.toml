@@ -2,7 +2,6 @@
 exclude = [
   ".git",
   ".github/workflows/template.yml",
-  ".github/workflows/format-template-rust.yml",
   "cargo-generate.toml",
   "TEMPLATE.md",
   ".scratch",
