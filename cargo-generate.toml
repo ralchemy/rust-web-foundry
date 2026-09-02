@@ -1,9 +1,10 @@
 [template]
-cargo_generate_version = ">=0.23.14, <0.24.0"
-ignore = [
-    "cargo-generate.toml",
-    "TEMPLATE.md",
-    ".scratch",
-    "postmortem",
-    ".github/workflows/template.yml",
+exclude = [
+  ".git",
+  ".github/workflows/template.yml",
+  ".github/workflows/format-template-rust.yml",
+  "cargo-generate.toml",
+  "TEMPLATE.md",
+  ".scratch",
+  "postmortem",
 ]
