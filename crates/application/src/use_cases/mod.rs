@@ -1,3 +1,5 @@
 mod task;
 
-pub use task::{CreateTask, CreateTaskCommand, GetTask, TaskView};
+pub use task::{
+    CreateTask, CreateTaskCommand, GetTask, StartTask, StartTaskCommand, TaskView,
+};
