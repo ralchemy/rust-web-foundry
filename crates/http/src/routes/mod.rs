@@ -6,9 +6,11 @@ use application::{CreateTask, GetTask, StartTask, TaskPolicy, TaskRepository, Ta
 #[cfg(feature = "reference-task")]
 use axum::routing::post;
 
+#[cfg(not(feature = "reference-task"))]
+use crate::state::HealthState;
 #[cfg(feature = "reference-task")]
 use crate::state::HttpState;
-use crate::{errors::ApiError, handlers, middleware, state::HealthState};
+use crate::{errors::ApiError, handlers, middleware};
 
 async fn not_found() -> ApiError {
     ApiError::NotFound
