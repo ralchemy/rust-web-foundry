@@ -3,7 +3,6 @@ mod observability;
 mod server;
 mod settings;
 
-use anyhow::anyhow;
 #[cfg(feature = "reference-task")]
 use application::{CreateTask, GetTask};
 #[cfg(feature = "reference-task")]
@@ -11,9 +10,9 @@ use infrastructure::{HttpTaskPolicy, MySqlTaskRepository};
 use infrastructure::MySqlReadinessProbe;
 use secrecy::{ExposeSecret, SecretString};
 use sqlx::MySqlPool;
-use std::time::Duration;
+use std::{error::Error, io, time::Duration};
 
-pub type AppResult<T> = anyhow::Result<T>;
+pub type AppResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 pub struct BuildConfig {
     pub database_url: SecretString,
@@ -103,6 +102,6 @@ async fn serve() -> AppResult<()> {
     server::serve(service, settings.http_addr, settings.shutdown_timeout).await
 }
 
-pub(crate) fn fail(message: &'static str) -> anyhow::Error {
-    anyhow!(message)
+pub(crate) fn fail(message: &'static str) -> Box<dyn Error + Send + Sync> {
+    Box::new(io::Error::other(message))
 }
