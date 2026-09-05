@@ -20,7 +20,7 @@ sqlx-prepare:
     set -euo pipefail
     database_url="${MIGRATION_DATABASE_URL:-mysql://app:app@127.0.0.1:3306/app}"
     SQLX_OFFLINE=false DATABASE_URL="$database_url" cargo sqlx migrate run --source crates/infrastructure/migrations/reference-task
-    SQLX_OFFLINE=false DATABASE_URL="$database_url" cargo sqlx prepare --workspace --all-features -- --all-targets --all-features
+    SQLX_OFFLINE=false DATABASE_URL="$database_url" cargo sqlx prepare --workspace -- --all-targets --all-features
 
 serve:
     cargo run -p "{{ project-name }}" -- serve
@@ -150,7 +150,7 @@ _accept:
     done
     curl -sS -o /dev/null http://127.0.0.1:4001/check
     cargo run -p "{{ project-name }}" --features reference-task -- migrate
-    SQLX_OFFLINE=false DATABASE_URL="$MIGRATION_DATABASE_URL" cargo sqlx prepare --check --workspace --all-features -- --all-targets --all-features
+    SQLX_OFFLINE=false DATABASE_URL="$MIGRATION_DATABASE_URL" cargo sqlx prepare --check --workspace -- --all-targets --all-features
     cargo run -p "{{ project-name }}" --features reference-task -- serve >"$server_log" 2>&1 &
     server_pid=$!
     for _ in {1..60}; do
