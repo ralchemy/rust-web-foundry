@@ -1,5 +1,5 @@
 [template]
-exclude = [
+ignore = [
   ".git",
   ".github/workflows/template.yml",
   "benchmarks",
