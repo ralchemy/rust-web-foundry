@@ -113,7 +113,7 @@ where
                 LocalSpan::add_properties(|| {
                     [
                         ("task.id", task.id().to_string()),
-                        ("task.revision", task.revision().get().to_string()),
+                        ("task.revision", task.revision.get().to_string()),
                     ]
                 });
             }
