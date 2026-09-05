@@ -3,9 +3,9 @@ mod repositories;
 
 pub use readiness::MySqlReadinessProbe;
 pub use repositories::MySqlTaskRepository;
-use sqlx::{MySqlPool, mysql::MySqlPoolOptions};
 #[cfg(feature = "reference-task")]
 use sqlx::migrate::Migrator;
+use sqlx::{MySqlPool, mysql::MySqlPoolOptions};
 
 #[cfg(feature = "reference-task")]
 pub static MIGRATOR: Migrator = sqlx::migrate!("./migrations/reference-task");
