@@ -1,19 +1,14 @@
 use application::ReadinessProbe;
-use axum::{
-    Router,
-    extract::DefaultBodyLimit,
-    middleware::from_fn,
-    routing::get,
-};
+use axum::{Router, extract::DefaultBodyLimit, middleware::from_fn, routing::get};
 
 #[cfg(feature = "reference-task")]
 use application::{CreateTask, GetTask, StartTask, TaskPolicy, TaskRepository, TaskStarter};
 #[cfg(feature = "reference-task")]
 use axum::routing::post;
 
-use crate::{errors::ApiError, handlers, middleware, state::HealthState};
 #[cfg(feature = "reference-task")]
 use crate::state::HttpState;
+use crate::{errors::ApiError, handlers, middleware, state::HealthState};
 
 async fn not_found() -> ApiError {
     ApiError::NotFound
@@ -269,7 +264,11 @@ mod tests {
         (status, json(response).await)
     }
 
-    async fn start(app: Router, task_id: &str, expected_revision: u64) -> (StatusCode, serde_json::Value) {
+    async fn start(
+        app: Router,
+        task_id: &str,
+        expected_revision: u64,
+    ) -> (StatusCode, serde_json::Value) {
         let response = app
             .oneshot(
                 Request::post(format!("/api/v1/tasks/{task_id}/start"))
