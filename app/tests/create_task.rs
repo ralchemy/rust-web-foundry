@@ -179,8 +179,7 @@ async fn production_build_executes_create_lookup_and_atomic_start_through_real_a
         outcomes
             .iter()
             .filter(|(status, body)| {
-                *status == StatusCode::CONFLICT
-                    && body["error"]["code"] == "task_revision_conflict"
+                *status == StatusCode::CONFLICT && body["error"]["code"] == "task_revision_conflict"
             })
             .count(),
         1
