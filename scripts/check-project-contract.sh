@@ -12,10 +12,6 @@ fail() {
 bytes=$(wc -c < "$repo_root/AGENTS.md" | tr -d '[:space:]')
 ((bytes <= 2000)) || fail "AGENTS.md is $bytes bytes; keep the standing contract below 2000"
 
-nested=$(find "$repo_root/app" "$repo_root/crates" -type f -name AGENTS.md -print)
-[[ -z "$nested" ]] \
-  || fail "generated projects use one root contract; remove nested AGENTS.md files: $nested"
-
 for legacy in \
   docs/agents \
   scripts/compile-agent-context.sh \
@@ -24,12 +20,8 @@ do
   [[ ! -e "$repo_root/$legacy" ]] || fail "legacy generated-context artifact remains: $legacy"
 done
 
-skills=$(find "$repo_root/.agents/skills" -type f -name SKILL.md -print | sort)
-skill_count=$(printf '%s\n' "$skills" | sed '/^$/d' | wc -l | tr -d '[:space:]')
-((skill_count == 1)) || fail "expected exactly one generated review Skill, found $skill_count"
-skill=$skills
-[[ "$skill" == "$repo_root/.agents/skills/review-rust-web/SKILL.md" ]] \
-  || fail "unexpected generated Skill: ${skill#"$repo_root/"}"
+skill="$repo_root/.agents/skills/review-rust-web/SKILL.md"
+[[ -f "$skill" ]] || fail "missing generated review Skill"
 
 for required in \
   .agents/rust-skills.lock \

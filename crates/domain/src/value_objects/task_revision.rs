@@ -11,6 +11,10 @@ impl TaskRevision {
     pub fn get(self) -> u64 {
         self.0
     }
+
+    pub(crate) fn next(self) -> Option<Self> {
+        self.0.checked_add(1).map(Self)
+    }
 }
 
 impl TryFrom<u64> for TaskRevision {

@@ -1,8 +1,8 @@
 # {{ project-name }}
 
-Runnable Axum reference service generated from the Rust Web Foundry Project Template.
+Runnable Axum service generated from Rust Web Foundry.
 
-The generated service includes a canonical Task create-and-lookup vertical slice. It demonstrates Clean Architecture boundaries, explicit boundary conversions, private database and wire models, checked SQLx persistence, outbound Ports, HTTP contracts, observability, and process lifecycle. Task is a reference slice, not a universal task-management domain model.
+The default service is intentionally small: production composition, MySQL readiness, configuration, observability, graceful shutdown, and quality gates are enabled without installing example business routes or schema. A richer canonical Task slice is available behind the default-off `reference-task` feature. It is executable architectural and DDD reference material, not a universal task-management domain model.
 
 ## Prerequisites
 
@@ -26,14 +26,24 @@ cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features
 just verify
 ```
 
-For direct operation, copy `.env.example` to `.env`, then run migrations and the server separately:
+`just verify` proves both configurations: the default server has health/readiness but no Task API, while the opt-in reference configuration exercises Task HTTP, Domain/Application behavior, MySQL persistence, TaskPolicy integration, trace propagation, and shutdown behavior.
+
+For direct default operation, copy `.env.example` to `.env`, then run:
 
 ```sh
 cargo run -p {{ project-name }} -- migrate
 cargo run -p {{ project-name }} -- serve
 ```
 
-The server never runs migrations. Configuration and lifecycle details are in [the Guide](docs/guide/README.md).
+To run the reference Task service instead:
+
+```sh
+just policy-stub
+just migrate-reference-task
+just serve-reference-task
+```
+
+The server never runs migrations automatically.
 
 ## Architecture
 
@@ -45,7 +55,9 @@ infrastructure ──┘
 app ──> http + infrastructure + application + domain
 ```
 
-Source, tests, manifests, migrations, and quality commands are the executable specification. Start changes from the nearest complete production path; use the Guide only for a concrete unanswered design question. See [architecture](docs/guide/architecture/README.md), the [selected stack](docs/guide/stack.md), the [Task flow](docs/guide/task-flow.md), and [development](docs/guide/development.md).
+Requested behavior and explicitly confirmed decisions own intended business/public semantics. Source, tests, manifests, migrations, and quality commands own current executable facts. If they conflict, surface the conflict instead of silently treating the reference Task domain as a source of user requirements.
+
+Feature work starts from the nearest complete production path and its tests. Use the Task reference only when its implementation pattern answers a concrete design question. See [architecture](docs/guide/architecture/README.md), [Domain modeling](docs/guide/domain/modeling.md), the [Task flow](docs/guide/task-flow.md), and [development](docs/guide/development.md).
 
 ## Rust review
 
@@ -55,19 +67,21 @@ The project pins `leonardomso/rust-skills` for fresh, review-only use and applie
 bash scripts/install-rust-skills.sh
 ```
 
-Then explicitly invoke `.agents/skills/review-rust-web/SKILL.md` in a fresh review session with the request and complete diff. See [Reviewing changes](docs/guide/reviewing.md).
+Then explicitly invoke `.agents/skills/review-rust-web/SKILL.md` in a fresh review session with the request and complete diff. The generated project may add its own Skills or local agent instructions later; template-default minimalism is not an application architecture rule.
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
 | `just infra-up` / `just infra-down` | Start or stop local MySQL |
-| `just policy-stub` | Run the local TaskPolicy example |
-| `just migrate` | Apply embedded migrations explicitly |
-| `just sqlx-prepare` | Apply development migrations and refresh `.sqlx` query metadata |
-| `just serve` | Start the production server path |
-| `just test` | Run every workspace test against an existing MySQL |
-| `just architecture` | Check workspace dependencies and the small project/review contract |
-| `just check` | Run architecture checks, format, Clippy, and DB-free tests |
-| `just ci` | Run checks, MySQL integration, query verification, and live smoke against an existing MySQL |
-| `just verify` | Start MySQL and prove the fresh service end to end |
+| `just migrate` | Run the default migration boundary; no reference schema is installed |
+| `just serve` | Start the default production server without Task routes |
+| `just policy-stub` | Run the opt-in TaskPolicy reference peer |
+| `just migrate-reference-task` | Apply reference Task migrations |
+| `just serve-reference-task` | Start the server with the `reference-task` slice |
+| `just sqlx-prepare` | Refresh SQLx metadata against the reference schema |
+| `just test` | Run default and reference workspace tests against existing MySQL |
+| `just architecture` | Check objective workspace dependencies and the small project/review contract |
+| `just check` | Check both feature shapes, format, Clippy, DB-free tests, SQLx style, and project contract |
+| `just ci` | Run checks, default/reference acceptance, SQLx verification, and lifecycle proof against existing MySQL |
+| `just verify` | Start MySQL and run the complete CI proof locally |

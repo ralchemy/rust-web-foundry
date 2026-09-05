@@ -3,6 +3,10 @@ name = "{{ project-name }}-infrastructure"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+reference-task = ["application/reference-task", "domain/reference-task"]
+
 [dependencies]
 application.workspace = true
 domain.workspace = true

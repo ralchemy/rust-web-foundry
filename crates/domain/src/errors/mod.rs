@@ -29,3 +29,10 @@ pub struct TaskEstimateMinutesError;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TaskRevisionError;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TaskTransitionError {
+    StartRequiresPending,
+    CompleteRequiresInProgress,
+    RevisionExhausted,
+}

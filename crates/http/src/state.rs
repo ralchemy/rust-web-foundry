@@ -1,21 +1,27 @@
-use application::{CreateTask, GetTask, ReadinessProbe, TaskPolicy, TaskRepository};
+use application::ReadinessProbe;
 use axum::extract::FromRef;
 
+#[cfg(feature = "reference-task")]
+use application::{CreateTask, GetTask, TaskPolicy, TaskRepository};
+
+#[derive(Clone)]
+pub(crate) struct HealthState<H>(pub(crate) H);
+
+#[cfg(feature = "reference-task")]
 #[derive(Clone)]
 pub(crate) struct HttpState<P, R, H> {
     task: TaskState<P, R>,
     health: HealthState<H>,
 }
 
+#[cfg(feature = "reference-task")]
 #[derive(Clone)]
 pub(crate) struct TaskState<P, R> {
     pub(crate) create: CreateTask<P, R>,
     pub(crate) get: GetTask<R>,
 }
 
-#[derive(Clone)]
-pub(crate) struct HealthState<H>(pub(crate) H);
-
+#[cfg(feature = "reference-task")]
 impl<P, R, H> HttpState<P, R, H>
 where
     P: TaskPolicy,
@@ -33,6 +39,7 @@ where
     }
 }
 
+#[cfg(feature = "reference-task")]
 impl<P, R, H> FromRef<HttpState<P, R, H>> for TaskState<P, R>
 where
     P: TaskPolicy,
@@ -43,6 +50,7 @@ where
     }
 }
 
+#[cfg(feature = "reference-task")]
 impl<P, R, H> FromRef<HttpState<P, R, H>> for HealthState<H>
 where
     H: ReadinessProbe,

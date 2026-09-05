@@ -28,7 +28,9 @@ pub(crate) struct MigrateSettings {
 pub(crate) struct ServeSettings {
     pub(crate) database_url: SecretString,
     pub(crate) http_addr: SocketAddr,
+    #[cfg(feature = "reference-task")]
     pub(crate) task_policy_url: String,
+    #[cfg(feature = "reference-task")]
     pub(crate) task_policy_timeout: Duration,
     pub(crate) shutdown_timeout: Duration,
     pub(crate) deployment_environment: String,
@@ -53,7 +55,9 @@ struct RawServeSettings {
     database_url: SecretString,
     #[serde(default = "default_http_addr")]
     http_addr: SocketAddr,
+    #[cfg(feature = "reference-task")]
     task_policy_url: String,
+    #[cfg(feature = "reference-task")]
     #[serde(default = "default_policy_timeout")]
     task_policy_timeout_ms: u64,
     #[serde(default = "default_shutdown_timeout")]
@@ -101,7 +105,9 @@ fn serve_from(config: Config) -> AppResult<ServeSettings> {
     Ok(ServeSettings {
         database_url: raw.database_url,
         http_addr: raw.http_addr,
+        #[cfg(feature = "reference-task")]
         task_policy_url: raw.task_policy_url,
+        #[cfg(feature = "reference-task")]
         task_policy_timeout: Duration::from_millis(raw.task_policy_timeout_ms),
         shutdown_timeout: Duration::from_secs(raw.shutdown_timeout_secs),
         deployment_environment: raw.deployment_environment,
@@ -120,10 +126,11 @@ fn environment() -> AppResult<Config> {
 }
 
 fn validate_serve(settings: &RawServeSettings) -> AppResult<()> {
-    if settings.task_policy_timeout_ms == 0
-        || settings.shutdown_timeout_secs == 0
-        || settings.otel_exporter_otlp_timeout == 0
-    {
+    if settings.shutdown_timeout_secs == 0 || settings.otel_exporter_otlp_timeout == 0 {
+        return Err(fail("timeouts must be positive"));
+    }
+    #[cfg(feature = "reference-task")]
+    if settings.task_policy_timeout_ms == 0 {
         return Err(fail("timeouts must be positive"));
     }
     if settings.deployment_environment.trim().is_empty() {
@@ -155,6 +162,7 @@ fn default_rust_log() -> String {
 fn default_trace_exporter() -> TraceExporter {
     TraceExporter::Console
 }
+#[cfg(feature = "reference-task")]
 fn default_policy_timeout() -> u64 {
     2_000
 }
@@ -169,9 +177,15 @@ fn default_otlp_timeout() -> u64 {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "reference-task")]
     const SERVE_REQUIRED: [(&str, &str); 3] = [
         ("database_url", "mysql://example"),
         ("task_policy_url", "http://policy.example/check"),
+        ("deployment_environment", "test"),
+    ];
+    #[cfg(not(feature = "reference-task"))]
+    const SERVE_REQUIRED: [(&str, &str); 2] = [
+        ("database_url", "mysql://example"),
         ("deployment_environment", "test"),
     ];
 
@@ -205,6 +219,7 @@ mod tests {
         let settings = serve_from(serve_configuration(&[])).unwrap();
 
         assert_eq!(settings.http_addr, "127.0.0.1:3000".parse().unwrap());
+        #[cfg(feature = "reference-task")]
         assert_eq!(settings.task_policy_timeout, Duration::from_secs(2));
         assert_eq!(settings.shutdown_timeout, Duration::from_secs(30));
         assert_eq!(settings.otlp_timeout, Duration::from_secs(10));
@@ -217,7 +232,6 @@ mod tests {
     fn serve_settings_reject_invalid_and_incomplete_values() {
         assert!(serve_from(configuration(std::iter::empty::<(&str, &str)>())).is_err());
         for (key, value) in [
-            ("task_policy_timeout_ms", "0"),
             ("shutdown_timeout_secs", "0"),
             ("otel_exporter_otlp_timeout", "0"),
             ("deployment_environment", " "),
@@ -229,6 +243,8 @@ mod tests {
                 "accepted {key}={value}"
             );
         }
+        #[cfg(feature = "reference-task")]
+        assert!(serve_from(serve_configuration(&[("task_policy_timeout_ms", "0")])).is_err());
     }
 
     #[test]

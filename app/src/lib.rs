@@ -3,17 +3,23 @@ mod observability;
 mod server;
 mod settings;
 
+use anyhow::anyhow;
+#[cfg(feature = "reference-task")]
 use application::{CreateTask, GetTask};
-use infrastructure::{HttpTaskPolicy, MySqlReadinessProbe, MySqlTaskRepository};
+#[cfg(feature = "reference-task")]
+use infrastructure::{HttpTaskPolicy, MySqlTaskRepository};
+use infrastructure::MySqlReadinessProbe;
 use secrecy::{ExposeSecret, SecretString};
 use sqlx::MySqlPool;
-use std::{error::Error, io, time::Duration};
+use std::time::Duration;
 
-pub type AppResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
+pub type AppResult<T> = anyhow::Result<T>;
 
 pub struct BuildConfig {
     pub database_url: SecretString,
+    #[cfg(feature = "reference-task")]
     pub task_policy_url: String,
+    #[cfg(feature = "reference-task")]
     pub task_policy_timeout: Duration,
     pub tracing_enabled: bool,
 }
@@ -35,16 +41,24 @@ impl BuiltService {
 }
 
 pub async fn build(config: BuildConfig) -> AppResult<BuiltService> {
-    let policy = HttpTaskPolicy::new(config.task_policy_url, config.task_policy_timeout)?;
     let pool = infrastructure::connect(config.database_url.expose_secret()).await?;
-    let repository = MySqlTaskRepository::new(pool.clone());
     let readiness = MySqlReadinessProbe::new(pool.clone(), Duration::from_secs(1));
-    let router = http::router(
-        CreateTask::new(policy, repository.clone()),
-        GetTask::new(repository),
-        readiness,
-        config.tracing_enabled,
-    );
+
+    #[cfg(feature = "reference-task")]
+    let router = {
+        let policy = HttpTaskPolicy::new(config.task_policy_url, config.task_policy_timeout)?;
+        let repository = MySqlTaskRepository::new(pool.clone());
+        http::router(
+            CreateTask::new(policy, repository.clone()),
+            GetTask::new(repository),
+            readiness,
+            config.tracing_enabled,
+        )
+    };
+
+    #[cfg(not(feature = "reference-task"))]
+    let router = http::router(readiness, config.tracing_enabled);
+
     Ok(BuiltService { router, pool })
 }
 
@@ -61,9 +75,9 @@ async fn migrate() -> AppResult<()> {
     let settings = settings::migrate()?;
     observability::init_logging(settings.log_format, &settings.rust_log)?;
     let pool = infrastructure::connect(settings.database_url.expose_secret()).await?;
-    let result = infrastructure::MIGRATOR.run(&pool).await;
+    #[cfg(feature = "reference-task")]
+    infrastructure::MIGRATOR.run(&pool).await?;
     pool.close().await;
-    result?;
     log::info!("database migrations applied");
     Ok(())
 }
@@ -79,7 +93,9 @@ async fn serve() -> AppResult<()> {
     )?;
     let service = build(BuildConfig {
         database_url: settings.database_url,
+        #[cfg(feature = "reference-task")]
         task_policy_url: settings.task_policy_url,
+        #[cfg(feature = "reference-task")]
         task_policy_timeout: settings.task_policy_timeout,
         tracing_enabled,
     })
@@ -87,6 +103,6 @@ async fn serve() -> AppResult<()> {
     server::serve(service, settings.http_addr, settings.shutdown_timeout).await
 }
 
-pub(crate) fn fail(message: &'static str) -> Box<dyn Error + Send + Sync> {
-    Box::new(io::Error::other(message))
+pub(crate) fn fail(message: &'static str) -> anyhow::Error {
+    anyhow!(message)
 }

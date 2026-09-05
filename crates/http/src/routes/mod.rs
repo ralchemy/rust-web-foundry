@@ -1,12 +1,19 @@
-use application::{CreateTask, GetTask, ReadinessProbe, TaskPolicy, TaskRepository};
+use application::ReadinessProbe;
 use axum::{
     Router,
     extract::DefaultBodyLimit,
     middleware::from_fn,
-    routing::{get, post},
+    routing::get,
 };
 
-use crate::{errors::ApiError, handlers, middleware, state::HttpState};
+#[cfg(feature = "reference-task")]
+use application::{CreateTask, GetTask, TaskPolicy, TaskRepository};
+#[cfg(feature = "reference-task")]
+use axum::routing::post;
+
+use crate::{errors::ApiError, handlers, middleware, state::HealthState};
+#[cfg(feature = "reference-task")]
+use crate::state::HttpState;
 
 async fn not_found() -> ApiError {
     ApiError::NotFound
@@ -16,6 +23,23 @@ async fn method_not_allowed() -> ApiError {
     ApiError::MethodNotAllowed
 }
 
+#[cfg(not(feature = "reference-task"))]
+pub fn router<H>(readiness: H, tracing_enabled: bool) -> Router
+where
+    H: ReadinessProbe,
+{
+    Router::new()
+        .route("/health/live", get(handlers::live))
+        .route("/health/ready", get(handlers::ready::<H>))
+        .fallback(not_found)
+        .method_not_allowed_fallback(method_not_allowed)
+        .layer(DefaultBodyLimit::max(8 * 1024))
+        .layer(from_fn(middleware::mark_server_error))
+        .layer(middleware::trace_layer(tracing_enabled))
+        .with_state(HealthState(readiness))
+}
+
+#[cfg(feature = "reference-task")]
 pub fn router<P, R, H>(
     create_task: CreateTask<P, R>,
     get_task: GetTask<R>,
@@ -43,7 +67,49 @@ where
         .with_state(HttpState::new(create_task, get_task, readiness))
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "reference-task")))]
+mod health_tests {
+    use super::*;
+    use application::{ReadinessError, ReadinessProbe};
+    use axum::{body::Body, http::{Request, StatusCode}};
+    use std::future::{Future, ready};
+    use tower::ServiceExt;
+
+    #[derive(Clone)]
+    struct Probe(Result<(), ReadinessError>);
+
+    impl ReadinessProbe for Probe {
+        fn check(&self) -> impl Future<Output = Result<(), ReadinessError>> + Send {
+            ready(self.0)
+        }
+    }
+
+    #[tokio::test]
+    async fn default_router_exposes_only_health_contract() {
+        let app = router(Probe(Ok(())), false);
+
+        let live = app
+            .clone()
+            .oneshot(Request::get("/health/live").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        let ready = app
+            .clone()
+            .oneshot(Request::get("/health/ready").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        let task = app
+            .oneshot(Request::get("/api/v1/tasks/example").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(live.status(), StatusCode::OK);
+        assert_eq!(ready.status(), StatusCode::OK);
+        assert_eq!(task.status(), StatusCode::NOT_FOUND);
+    }
+}
+
+#[cfg(all(test, feature = "reference-task"))]
 mod tests {
     use super::*;
     use application::{
@@ -253,88 +319,56 @@ mod tests {
     async fn create_uses_the_fixed_error_contract() {
         let cases = [
             (
-                app(
-                    Ok(TaskPolicyDecision::Allowed),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
                 "{".into(),
                 Some("application/json"),
                 StatusCode::BAD_REQUEST,
                 "invalid_request",
             ),
             (
-                app(
-                    Ok(TaskPolicyDecision::Allowed),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
                 r#"{"title":"Task","extra":true}"#.into(),
                 Some("application/json"),
                 StatusCode::BAD_REQUEST,
                 "invalid_request",
             ),
             (
-                app(
-                    Ok(TaskPolicyDecision::Allowed),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
                 r#"{"title":"Task"}"#.into(),
                 None,
                 StatusCode::UNSUPPORTED_MEDIA_TYPE,
                 "unsupported_media_type",
             ),
             (
-                app(
-                    Ok(TaskPolicyDecision::Allowed),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
                 serde_json::json!({"title": "x".repeat(8 * 1024)}).to_string(),
                 Some("application/json"),
                 StatusCode::PAYLOAD_TOO_LARGE,
                 "request_too_large",
             ),
             (
-                app(
-                    Ok(TaskPolicyDecision::Allowed),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
                 r#"{"title":"Task","priority":"urgent"}"#.into(),
                 Some("application/json"),
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "task_input_invalid",
             ),
             (
-                app(
-                    Ok(TaskPolicyDecision::Rejected),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Ok(TaskPolicyDecision::Rejected), Repository::default(), Ok(())),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "task_policy_rejected",
             ),
             (
-                app(
-                    Err(TaskPolicyError::BadResponse),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Err(TaskPolicyError::BadResponse), Repository::default(), Ok(())),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
                 StatusCode::BAD_GATEWAY,
                 "task_policy_bad_response",
             ),
             (
-                app(
-                    Err(TaskPolicyError::Unavailable),
-                    Repository::default(),
-                    Ok(()),
-                ),
+                app(Err(TaskPolicyError::Unavailable), Repository::default(), Ok(())),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
                 StatusCode::SERVICE_UNAVAILABLE,
