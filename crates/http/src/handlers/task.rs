@@ -1,79 +1,38 @@
 use crate::{
     conversions::{CreateTaskRequestError, TaskPathError},
-    dtos::{CreateTaskRequest, TaskPath, TaskResponse},
+    dtos::{CreateTaskRequest, StartTaskRequest, TaskPath, TaskResponse},
     errors::ApiError,
     state::TaskState,
 };
-use application::{TaskPolicy, TaskRepository};
-use axum::{
-    Json,
-    extract::{Path, State, rejection::JsonRejection},
-    http::StatusCode,
-};
-use domain::TaskId;
+use application::{StartTaskCommand, TaskPolicy, TaskRepository};
+use axum::{Json, extract::{Path, State, rejection::JsonRejection}, http::StatusCode};
+use domain::{TaskId, TaskRevision};
 use fastrace::{future::FutureExt, local::LocalSpan, prelude::Span};
 
-pub(crate) async fn create_task<P, R>(
-    State(state): State<TaskState<P, R>>,
-    request: Result<Json<CreateTaskRequest>, JsonRejection>,
-) -> Result<(StatusCode, Json<TaskResponse>), ApiError>
-where
-    P: TaskPolicy,
-    R: TaskRepository,
-{
+pub(crate) async fn create_task<P, R>(State(state): State<TaskState<P, R>>, request: Result<Json<CreateTaskRequest>, JsonRejection>) -> Result<(StatusCode, Json<TaskResponse>), ApiError>
+where P: TaskPolicy, R: TaskRepository {
     let Json(request) = request.map_err(ApiError::from)?;
-    let span =
-        Span::enter_with_local_parent("task.create").with_property(|| ("span.kind", "internal"));
+    let span = Span::enter_with_local_parent("task.create");
     let task = async {
-        let command = request.try_into().map_err(|_: CreateTaskRequestError| {
-            LocalSpan::add_properties(|| {
-                [
-                    ("span.status_code", "error"),
-                    ("error.type", "task_input_validation"),
-                ]
-            });
-            ApiError::TaskInputInvalid
-        })?;
-        let result = state.create.execute(command).await;
-        match &result {
-            Ok(task) => {
-                LocalSpan::add_property(|| ("task.id", task.id().to_string()));
-            }
-            Err(error) => {
-                let category = match error {
-                    application::CreateTaskError::PolicyRejected => "task_policy_rejected",
-                    application::CreateTaskError::PolicyUnavailable => "task_policy_unavailable",
-                    application::CreateTaskError::PolicyBadResponse => "task_policy_bad_response",
-                    application::CreateTaskError::Persistence => "task_persistence",
-                };
-                LocalSpan::add_properties(|| {
-                    [("span.status_code", "error"), ("error.type", category)]
-                });
-            }
-        }
-        result.map_err(ApiError::from)
-    }
-    .in_span(span)
-    .await?;
-
+        let command = request.try_into().map_err(|_: CreateTaskRequestError| ApiError::TaskInputInvalid)?;
+        state.create.execute(command).await.map_err(ApiError::from)
+    }.in_span(span).await?;
     Ok((StatusCode::CREATED, Json(task.into())))
 }
 
-pub(crate) async fn get_task<P, R>(
-    State(state): State<TaskState<P, R>>,
-    Path(path): Path<TaskPath>,
-) -> Result<Json<TaskResponse>, ApiError>
-where
-    P: TaskPolicy,
-    R: TaskRepository,
-{
+pub(crate) async fn get_task<P, R>(State(state): State<TaskState<P, R>>, Path(path): Path<TaskPath>) -> Result<Json<TaskResponse>, ApiError>
+where P: TaskPolicy, R: TaskRepository {
     let task_id = TaskId::try_from(path).map_err(|_: TaskPathError| ApiError::TaskIdInvalid)?;
-    let task = state
-        .get
-        .execute(task_id)
-        .await
-        .map_err(ApiError::from)?
-        .ok_or(ApiError::TaskNotFound)?;
-
+    let task = state.get.execute(task_id).await.map_err(ApiError::from)?.ok_or(ApiError::TaskNotFound)?;
     Ok(Json(task.into()))
+}
+
+pub(crate) async fn start_task<P, R>(State(state): State<TaskState<P, R>>, Path(path): Path<TaskPath>, request: Result<Json<StartTaskRequest>, JsonRejection>) -> Result<Json<TaskResponse>, ApiError>
+where P: TaskPolicy, R: TaskRepository {
+    let task_id = TaskId::try_from(path).map_err(|_: TaskPathError| ApiError::TaskIdInvalid)?;
+    let Json(request) = request.map_err(ApiError::from)?;
+    let expected_revision = TaskRevision::try_from(request.expected_revision).map_err(|_| ApiError::TaskInputInvalid)?;
+    let result = state.start.execute(StartTaskCommand { task_id, expected_revision }).await;
+    if result.is_err() { LocalSpan::add_property(|| ("span.status_code", "error")); }
+    Ok(Json(result.map_err(ApiError::from)?.into()))
 }
