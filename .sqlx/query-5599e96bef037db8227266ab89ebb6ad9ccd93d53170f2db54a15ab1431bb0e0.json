@@ -1,0 +1,150 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT id, title, description, priority, status, assignee_id, estimate_minutes, revision FROM tasks WHERE id = ? FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "String",
+          "flags": "NOT_NULL | PRIMARY_KEY | BINARY | NO_DEFAULT_VALUE",
+          "collation": 255,
+          "max_size": 104
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 255,
+          "max_size": 800
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": {
+          "type": "VarString",
+          "flags": "",
+          "collation": 255,
+          "max_size": 8000
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "priority",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL",
+          "collation": 255,
+          "max_size": 64
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "priority"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL",
+          "collation": 255,
+          "max_size": 64
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "assignee_id",
+        "type_info": {
+          "type": "String",
+          "flags": "BINARY",
+          "collation": 255,
+          "max_size": 104
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "assignee_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "estimate_minutes",
+        "type_info": {
+          "type": "Long",
+          "flags": "UNSIGNED",
+          "collation": 63,
+          "max_size": 10
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "estimate_minutes"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "revision",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
+          "max_size": 20
+        },
+        "origin": {
+          "Table": {
+            "table": "app.tasks",
+            "name": "revision"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "5599e96bef037db8227266ab89ebb6ad9ccd93d53170f2db54a15ab1431bb0e0"
+}
