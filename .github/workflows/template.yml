@@ -51,6 +51,7 @@ jobs:
           cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,mysql
       - name: Generate and verify
         run: |
+          set -x
           template_root=$PWD
           test -f "$template_root/AGENTS.md"
           test "$(find "$template_root" -type f -name AGENTS.md | wc -l)" -eq 1
