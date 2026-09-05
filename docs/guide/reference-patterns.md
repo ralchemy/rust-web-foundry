@@ -7,7 +7,7 @@ Reference code is executable teaching material, not authority for a generated pr
 | How is an invariant represented? | `crates/domain/src/value_objects/task_title.rs` | private representation, validating construction | Task title rules |
 | How does an entity own a state transition? | `crates/domain/src/entities/task.rs` | named operation, rejected transition leaves state unchanged | Task lifecycle |
 | How does Application cross an external boundary? | `crates/application/src/use_cases/task/create.rs` | use-case-owned Port orchestration | TaskPolicy semantics |
-| How is persistence reconstructed safely? | `crates/infrastructure/src/mysql/repositories/task.rs` | private row, checked conversion into Domain | Task schema |
+| How is persistence reconstructed safely? | `crates/infrastructure/src/mysql/repositories/task/conversions.rs` | private row, checked conversion into Domain | Task schema |
 | How is a complete public path installed? | `app/tests/create_task.rs` | real composition and adapter-boundary proof | Task HTTP contract |
 | How should concurrency-sensitive mutations be shaped? | `docs/guide/reference-concurrency.md` | expected revision, atomic Port contract, Domain decision under the atomic boundary | optimistic locking when the user's requirement does not need it |
 
