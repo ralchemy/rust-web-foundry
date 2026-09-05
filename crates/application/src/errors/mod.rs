@@ -1,3 +1,5 @@
+use domain::TaskTransitionError;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TaskPolicyError {
     Unavailable,
@@ -6,6 +8,15 @@ pub enum TaskPolicyError {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TaskRepositoryError {
+    Unavailable,
+    CorruptRecord,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StartTaskMutationError {
+    NotFound,
+    Conflict,
+    Rejected(TaskTransitionError),
     Unavailable,
     CorruptRecord,
 }
@@ -23,3 +34,11 @@ pub enum CreateTaskError {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct GetTaskError;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StartTaskError {
+    NotFound,
+    Conflict,
+    Rejected(TaskTransitionError),
+    Persistence,
+}

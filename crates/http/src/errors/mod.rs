@@ -1,5 +1,5 @@
 use crate::dtos::ErrorEnvelope;
-use application::{CreateTaskError, GetTaskError};
+use application::{CreateTaskError, GetTaskError, StartTaskError};
 use axum::{
     Json,
     extract::rejection::JsonRejection,
@@ -16,6 +16,8 @@ pub(crate) enum ApiError {
     TaskInputInvalid,
     TaskIdInvalid,
     TaskNotFound,
+    TaskConflict,
+    TaskTransitionRejected,
     TaskPolicyRejected,
     TaskPolicyBadResponse,
     TaskPolicyUnavailable,
@@ -36,6 +38,17 @@ impl From<CreateTaskError> for ApiError {
 impl From<GetTaskError> for ApiError {
     fn from(_: GetTaskError) -> Self {
         Self::Internal
+    }
+}
+
+impl From<StartTaskError> for ApiError {
+    fn from(error: StartTaskError) -> Self {
+        match error {
+            StartTaskError::NotFound => Self::TaskNotFound,
+            StartTaskError::Conflict => Self::TaskConflict,
+            StartTaskError::Rejected(_) => Self::TaskTransitionRejected,
+            StartTaskError::Persistence => Self::Internal,
+        }
     }
 }
 
@@ -87,6 +100,16 @@ impl ApiError {
                 StatusCode::NOT_FOUND,
                 "task_not_found",
                 "task was not found",
+            ),
+            Self::TaskConflict => (
+                StatusCode::CONFLICT,
+                "task_revision_conflict",
+                "task revision is stale",
+            ),
+            Self::TaskTransitionRejected => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "task_transition_rejected",
+                "task transition is not allowed",
             ),
             Self::TaskPolicyRejected => (
                 StatusCode::UNPROCESSABLE_ENTITY,

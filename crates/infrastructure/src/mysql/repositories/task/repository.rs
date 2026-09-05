@@ -1,6 +1,6 @@
 use super::row::TaskRow;
-use application::{TaskRepository, TaskRepositoryError};
-use domain::{Task, TaskId};
+use application::{StartTaskMutationError, TaskRepository, TaskRepositoryError, TaskStarter};
+use domain::{Task, TaskId, TaskRevision};
 use fastrace::{future::FutureExt, local::LocalSpan, prelude::Span};
 use sqlx::MySqlPool;
 
@@ -101,6 +101,98 @@ impl TaskRepository for MySqlTaskRepository {
             TaskRepositoryError::CorruptRecord
         })
     }
+}
+
+impl TaskStarter for MySqlTaskRepository {
+    async fn start(
+        &self,
+        task_id: &TaskId,
+        expected_revision: TaskRevision,
+    ) -> Result<Task, StartTaskMutationError> {
+        let span = Span::enter_with_local_parent("mysql.task.start").with_properties(|| {
+            [
+                ("span.kind", "client"),
+                ("db.system.name", "mysql"),
+                ("db.operation.name", "UPDATE"),
+                ("db.collection.name", "tasks"),
+            ]
+        });
+        let id = task_id.to_string();
+
+        async {
+            let mut transaction = self.pool.begin().await.map_err(|error| {
+                log_database_failure("task start transaction begin", &error);
+                StartTaskMutationError::Unavailable
+            })?;
+            let row = sqlx::query_as!(
+                TaskRow,
+                "SELECT id, title, description, priority, status, assignee_id, estimate_minutes, revision FROM tasks WHERE id = ? FOR UPDATE",
+                id,
+            )
+            .fetch_optional(&mut *transaction)
+            .await
+            .map_err(|error| {
+                log_database_failure("task start lookup", &error);
+                StartTaskMutationError::Unavailable
+            })?
+            .ok_or(StartTaskMutationError::NotFound)?;
+
+            let mut task = Task::try_from(row).map_err(|error| {
+                log::error!("task start reconstruction failed; conversion={error:?}");
+                StartTaskMutationError::CorruptRecord
+            })?;
+            if task.revision() != expected_revision {
+                return Err(StartTaskMutationError::Conflict);
+            }
+            task.start().map_err(StartTaskMutationError::Rejected)?;
+
+            let status = task.status().to_string();
+            let revision = task.revision().get();
+            let affected = sqlx::query!(
+                "UPDATE tasks SET status = ?, revision = ? WHERE id = ? AND revision = ?",
+                status,
+                revision,
+                id,
+                expected_revision.get(),
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(|error| {
+                log_database_failure("task start update", &error);
+                StartTaskMutationError::Unavailable
+            })?
+            .rows_affected();
+            if affected != 1 {
+                return Err(StartTaskMutationError::Conflict);
+            }
+
+            transaction.commit().await.map_err(|error| {
+                log_database_failure("task start transaction commit", &error);
+                StartTaskMutationError::Unavailable
+            })?;
+            Ok(task)
+        }
+        .in_span(span)
+        .await
+        .inspect_err(|error| {
+            let category = match error {
+                StartTaskMutationError::NotFound => "task_not_found",
+                StartTaskMutationError::Conflict => "task_revision_conflict",
+                StartTaskMutationError::Rejected(_) => "task_transition_rejected",
+                StartTaskMutationError::Unavailable => "task_persistence",
+                StartTaskMutationError::CorruptRecord => "task_record_corrupt",
+            };
+            mark_database_error(category);
+        })
+    }
+}
+
+fn log_database_failure(operation: &'static str, error: &sqlx::Error) {
+    let code = error
+        .as_database_error()
+        .and_then(|database| database.code())
+        .unwrap_or_else(|| "unavailable".into());
+    log::error!("{operation} failed; database_code={code}");
 }
 
 fn mark_database_error(category: &'static str) {

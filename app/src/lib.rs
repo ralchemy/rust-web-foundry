@@ -4,10 +4,10 @@ mod server;
 mod settings;
 
 #[cfg(feature = "reference-task")]
-use application::{CreateTask, GetTask};
+use application::{CreateTask, GetTask, StartTask};
+use infrastructure::MySqlReadinessProbe;
 #[cfg(feature = "reference-task")]
 use infrastructure::{HttpTaskPolicy, MySqlTaskRepository};
-use infrastructure::MySqlReadinessProbe;
 use secrecy::{ExposeSecret, SecretString};
 use sqlx::MySqlPool;
 use std::{error::Error, io, time::Duration};
@@ -49,7 +49,8 @@ pub async fn build(config: BuildConfig) -> AppResult<BuiltService> {
         let repository = MySqlTaskRepository::new(pool.clone());
         http::router(
             CreateTask::new(policy, repository.clone()),
-            GetTask::new(repository),
+            GetTask::new(repository.clone()),
+            StartTask::new(repository),
             readiness,
             config.tracing_enabled,
         )

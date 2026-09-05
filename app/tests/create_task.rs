@@ -84,8 +84,17 @@ fn create_request(title: &str) -> Request<Body> {
         .unwrap()
 }
 
+fn start_request(task_id: &str, expected_revision: u64) -> Request<Body> {
+    Request::post(format!("/api/v1/tasks/{task_id}/start"))
+        .header("content-type", "application/json")
+        .body(Body::from(
+            json!({"expected_revision": expected_revision}).to_string(),
+        ))
+        .unwrap()
+}
+
 #[tokio::test]
-async fn production_build_executes_create_and_lookup_through_real_adapters() {
+async fn production_build_executes_create_lookup_and_atomic_start_through_real_adapters() {
     let database_url = std::env::var("TEST_DATABASE_URL")
         .expect("TEST_DATABASE_URL is required for the MySQL integration test");
     let pool = infrastructure::connect(&database_url).await.unwrap();
@@ -154,6 +163,46 @@ async fn production_build_executes_create_and_lookup_through_real_adapters() {
     let (status, found) = request_json(service.router(), get).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(found, created);
+
+    let first = request_json(service.router(), start_request(id, 1));
+    let second = request_json(service.router(), start_request(id, 1));
+    let (first, second) = tokio::join!(first, second);
+    let outcomes = [first, second];
+    assert_eq!(
+        outcomes
+            .iter()
+            .filter(|(status, _)| *status == StatusCode::OK)
+            .count(),
+        1
+    );
+    assert_eq!(
+        outcomes
+            .iter()
+            .filter(|(status, body)| {
+                *status == StatusCode::CONFLICT && body["error"]["code"] == "task_revision_conflict"
+            })
+            .count(),
+        1
+    );
+
+    let stored_after_start: (String, u64) =
+        sqlx::query_as("SELECT status, revision FROM tasks WHERE id = ?")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(stored_after_start, ("in_progress".into(), 2));
+
+    let (status, body) = request_json(service.router(), start_request(id, 2)).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(body["error"]["code"], "task_transition_rejected");
+    let stored_after_rejection: (String, u64) =
+        sqlx::query_as("SELECT status, revision FROM tasks WHERE id = ?")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(stored_after_rejection, ("in_progress".into(), 2));
 
     for (mode, expected_status, expected_code) in [
         (

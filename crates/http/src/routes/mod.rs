@@ -1,19 +1,16 @@
 use application::ReadinessProbe;
-use axum::{
-    Router,
-    extract::DefaultBodyLimit,
-    middleware::from_fn,
-    routing::get,
-};
+use axum::{Router, extract::DefaultBodyLimit, middleware::from_fn, routing::get};
 
 #[cfg(feature = "reference-task")]
-use application::{CreateTask, GetTask, TaskPolicy, TaskRepository};
+use application::{CreateTask, GetTask, StartTask, TaskPolicy, TaskRepository, TaskStarter};
 #[cfg(feature = "reference-task")]
 use axum::routing::post;
 
-use crate::{errors::ApiError, handlers, middleware, state::HealthState};
+#[cfg(not(feature = "reference-task"))]
+use crate::state::HealthState;
 #[cfg(feature = "reference-task")]
 use crate::state::HttpState;
+use crate::{errors::ApiError, handlers, middleware};
 
 async fn not_found() -> ApiError {
     ApiError::NotFound
@@ -43,17 +40,19 @@ where
 pub fn router<P, R, H>(
     create_task: CreateTask<P, R>,
     get_task: GetTask<R>,
+    start_task: StartTask<R>,
     readiness: H,
     tracing_enabled: bool,
 ) -> Router
 where
     P: TaskPolicy,
-    R: TaskRepository,
+    R: TaskRepository + TaskStarter,
     H: ReadinessProbe,
 {
     let api = Router::new()
         .route("/tasks", post(handlers::create_task::<P, R>))
-        .route("/tasks/{task_id}", get(handlers::get_task::<P, R>));
+        .route("/tasks/{task_id}", get(handlers::get_task::<P, R>))
+        .route("/tasks/{task_id}/start", post(handlers::start_task::<P, R>));
 
     Router::new()
         .nest("/api/v1", api)
@@ -64,14 +63,17 @@ where
         .layer(DefaultBodyLimit::max(8 * 1024))
         .layer(from_fn(middleware::mark_server_error))
         .layer(middleware::trace_layer(tracing_enabled))
-        .with_state(HttpState::new(create_task, get_task, readiness))
+        .with_state(HttpState::new(create_task, get_task, start_task, readiness))
 }
 
 #[cfg(all(test, not(feature = "reference-task")))]
 mod health_tests {
     use super::*;
     use application::{ReadinessError, ReadinessProbe};
-    use axum::{body::Body, http::{Request, StatusCode}};
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
     use std::future::{Future, ready};
     use tower::ServiceExt;
 
@@ -99,7 +101,11 @@ mod health_tests {
             .await
             .unwrap();
         let task = app
-            .oneshot(Request::get("/api/v1/tasks/example").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::get("/api/v1/tasks/example")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
@@ -113,13 +119,14 @@ mod health_tests {
 mod tests {
     use super::*;
     use application::{
-        ReadinessError, TaskPolicyDecision, TaskPolicyError, TaskPolicyInput, TaskRepositoryError,
+        ReadinessError, StartTaskMutationError, TaskPolicyDecision, TaskPolicyError,
+        TaskPolicyInput, TaskRepositoryError,
     };
     use axum::{
         body::Body,
         http::{Request, StatusCode},
     };
-    use domain::{Task, TaskId};
+    use domain::{Task, TaskId, TaskRevision};
     use http_body_util::BodyExt;
     use std::{
         future::{Future, ready},
@@ -187,6 +194,33 @@ mod tests {
         }
     }
 
+    impl TaskStarter for Repository {
+        fn start(
+            &self,
+            task_id: &TaskId,
+            expected_revision: TaskRevision,
+        ) -> impl Future<Output = Result<Task, StartTaskMutationError>> + Send {
+            let result = if self.failure.is_some() {
+                Err(StartTaskMutationError::Unavailable)
+            } else {
+                let mut tasks = self.tasks.lock().unwrap();
+                let task = match tasks.iter_mut().find(|task| task.id() == *task_id) {
+                    Some(task) => task,
+                    None => return ready(Err(StartTaskMutationError::NotFound)),
+                };
+                if task.revision() != expected_revision {
+                    Err(StartTaskMutationError::Conflict)
+                } else {
+                    match task.start() {
+                        Ok(()) => Ok(task.clone()),
+                        Err(error) => Err(StartTaskMutationError::Rejected(error)),
+                    }
+                }
+            };
+            ready(result)
+        }
+    }
+
     #[derive(Clone)]
     struct Probe(Result<(), ReadinessError>);
 
@@ -203,7 +237,8 @@ mod tests {
     ) -> Router {
         router(
             CreateTask::new(Policy(policy), repository.clone()),
-            GetTask::new(repository),
+            GetTask::new(repository.clone()),
+            StartTask::new(repository),
             Probe(readiness),
             false,
         )
@@ -225,6 +260,26 @@ mod tests {
         }
         let response = app
             .oneshot(request.body(Body::from(body)).unwrap())
+            .await
+            .unwrap();
+        let status = response.status();
+        (status, json(response).await)
+    }
+
+    async fn start(
+        app: Router,
+        task_id: &str,
+        expected_revision: u64,
+    ) -> (StatusCode, serde_json::Value) {
+        let response = app
+            .oneshot(
+                Request::post(format!("/api/v1/tasks/{task_id}/start"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"expected_revision": expected_revision}).to_string(),
+                    ))
+                    .unwrap(),
+            )
             .await
             .unwrap();
         let status = response.status();
@@ -296,6 +351,31 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn start_advances_revision_and_rejects_a_stale_retry() {
+        let app = app(
+            Ok(TaskPolicyDecision::Allowed),
+            Repository::default(),
+            Ok(()),
+        );
+        let (_, created) = post(
+            app.clone(),
+            r#"{"title":"Start me"}"#.into(),
+            Some("application/json"),
+        )
+        .await;
+        let id = created["id"].as_str().unwrap();
+
+        let (status, started) = start(app.clone(), id, 1).await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(started["status"], "in_progress");
+        assert_eq!(started["revision"], 2);
+
+        let (status, body) = start(app, id, 1).await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        assert_eq!(body["error"]["code"], "task_revision_conflict");
+    }
+
+    #[tokio::test]
     async fn omitted_optional_fields_keep_the_minimal_smoke_contract_valid() {
         let app = app(
             Ok(TaskPolicyDecision::Allowed),
@@ -319,56 +399,88 @@ mod tests {
     async fn create_uses_the_fixed_error_contract() {
         let cases = [
             (
-                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 "{".into(),
                 Some("application/json"),
                 StatusCode::BAD_REQUEST,
                 "invalid_request",
             ),
             (
-                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task","extra":true}"#.into(),
                 Some("application/json"),
                 StatusCode::BAD_REQUEST,
                 "invalid_request",
             ),
             (
-                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 None,
                 StatusCode::UNSUPPORTED_MEDIA_TYPE,
                 "unsupported_media_type",
             ),
             (
-                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 serde_json::json!({"title": "x".repeat(8 * 1024)}).to_string(),
                 Some("application/json"),
                 StatusCode::PAYLOAD_TOO_LARGE,
                 "request_too_large",
             ),
             (
-                app(Ok(TaskPolicyDecision::Allowed), Repository::default(), Ok(())),
+                app(
+                    Ok(TaskPolicyDecision::Allowed),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task","priority":"urgent"}"#.into(),
                 Some("application/json"),
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "task_input_invalid",
             ),
             (
-                app(Ok(TaskPolicyDecision::Rejected), Repository::default(), Ok(())),
+                app(
+                    Ok(TaskPolicyDecision::Rejected),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "task_policy_rejected",
             ),
             (
-                app(Err(TaskPolicyError::BadResponse), Repository::default(), Ok(())),
+                app(
+                    Err(TaskPolicyError::BadResponse),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
                 StatusCode::BAD_GATEWAY,
                 "task_policy_bad_response",
             ),
             (
-                app(Err(TaskPolicyError::Unavailable), Repository::default(), Ok(())),
+                app(
+                    Err(TaskPolicyError::Unavailable),
+                    Repository::default(),
+                    Ok(()),
+                ),
                 r#"{"title":"Task"}"#.into(),
                 Some("application/json"),
                 StatusCode::SERVICE_UNAVAILABLE,

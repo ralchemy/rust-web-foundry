@@ -1,7 +1,8 @@
 [template]
-exclude = [
+ignore = [
   ".git",
   ".github/workflows/template.yml",
+  "benchmarks",
   "cargo-generate.toml",
   "TEMPLATE.md",
   ".scratch",

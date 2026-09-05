@@ -4,7 +4,7 @@ The Baseline explains decisions embodied by the generated service. Development R
 
 ## Authority
 
-1. The requested behavior and acceptance tests own feature semantics.
+1. The requested behavior and explicitly confirmed decisions own intended feature semantics.
 2. Source, manifests, migrations, tests, Just recipes, and CI own executable facts about the installed service.
 3. Root `AGENTS.md` owns only the small Clean Architecture, trust-boundary, selected-stack, and verification contract that cannot be inferred reliably from a single file.
 4. This Guide explains the design and alternatives but is not automatically loaded for ordinary implementation.
@@ -25,6 +25,8 @@ When sources disagree, stop at the concrete authority seam instead of choosing t
 
 Start with the requested behavior, nearest production slice, and tests. Read a Guide chapter only when they expose a concrete unanswered design question, or when adding a capability with no existing example. Normal endpoint work does not need to preload the Guide.
 
+For example code, start from [Reference patterns](reference-patterns.md). It is deliberately a short navigation table: follow only the row that answers the current design question. [Reference complexity budget](reference-policy.md) defines when another example is worth adding.
+
 ## Baseline
 
 - [Architecture](architecture/README.md): crate ownership, dependencies, and where shared behavior belongs.
@@ -41,7 +43,8 @@ Start with the requested behavior, nearest production slice, and tests. Read a G
 - [Validation](http/validation.md): transport checks, Domain construction, business decisions, `axum-valid`, and public errors.
 - [Middleware](http/middleware.md): installed Layer order, fastrace context, body limits, error handling, and conditional extensions.
 - [Database](infrastructure/database.md): MySQL ownership, compile-time queries, migrations, transactions, and external consistency.
-- [Task flow](task-flow.md): the canonical CreateTask slice, transformations, boundary ownership, and verification.
+- [Task flow](task-flow.md): the canonical reference Task slice, transformations, boundary ownership, and verification.
+- [Concurrency reference](reference-concurrency.md): expected revision and atomic mutation responsibility, to be used only when a requirement needs it.
 - [Runtime](runtime.md): migrations, health, shutdown, and the platform-neutral deployment contract.
 - [Testing](testing.md): boundary-owned tests, real adapters, SQLx offline limits, and quality gates.
 - [Development](development.md): the code-first workflow, checks, dependencies, and handoff.
