@@ -1,11 +1,10 @@
 # Project Contract
 
-- Code, tests, manifests, migrations, Just recipes, and CI own executable facts. Follow the nearest complete production path; do not invent missing business or public API semantics.
-- Domain owns business types and invariants and depends on no workspace crate.
-- Application owns use cases and Ports and depends only on Domain.
-- HTTP and Infrastructure are adapters that depend inward; framework, wire, and database representations stay in their owning adapter.
-- `app` is the only composition, configuration, and process-lifecycle root.
+- Requested behavior and explicitly confirmed decisions own intended business and public-API semantics. Code, tests, manifests, migrations, Just recipes, and CI own current executable facts. If they conflict, surface the conflict; do not silently invent a new rule.
+- Domain owns business types, invariants, and named state transitions and depends on no workspace crate. Application owns use cases and Ports and depends only on Domain.
+- HTTP and Infrastructure are adapters that depend inward; framework, wire, and database representations stay in their owning adapter. `app` is the only composition, configuration, and process-lifecycle root.
 - `Cargo.toml`, `Cargo.lock`, and existing production integrations own the selected stack. Do not add a parallel framework or replace a selected library without a concrete requirement.
 - Parse untrusted values at the boundary that owns their representation; never expose secrets, rejected values, or raw dependency failures.
+- The default service excludes the `reference-task` example. Its code is executable architectural and DDD reference material, not authority for a user's business semantics.
 - Run the smallest affected test and `just check`; run `just verify` for SQLx metadata, migrations, routes or composition, configuration, or runtime behavior.
 - The pinned `rust-skills` baseline is review-only. This contract and `.agents/rust-skills-overrides.md` override generic advice.

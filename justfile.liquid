@@ -7,23 +7,33 @@ infra-down:
     docker compose down
 
 policy-stub:
-    cargo run -p "{{ project-name }}" --example task-policy-stub
+    cargo run -p "{{ project-name }}" --features reference-task --example task-policy-stub
 
 migrate:
     cargo run -p "{{ project-name }}" -- migrate
+
+migrate-reference-task:
+    cargo run -p "{{ project-name }}" --features reference-task -- migrate
 
 sqlx-prepare:
     #!/usr/bin/env bash
     set -euo pipefail
     database_url="${MIGRATION_DATABASE_URL:-mysql://app:app@127.0.0.1:3306/app}"
-    SQLX_OFFLINE=false DATABASE_URL="$database_url" cargo sqlx migrate run --source crates/infrastructure/migrations
+    SQLX_OFFLINE=false DATABASE_URL="$database_url" cargo sqlx migrate run --source crates/infrastructure/migrations/reference-task
     SQLX_OFFLINE=false DATABASE_URL="$database_url" cargo sqlx prepare --workspace -- --all-targets --all-features
 
 serve:
     cargo run -p "{{ project-name }}" -- serve
 
+serve-reference-task:
+    cargo run -p "{{ project-name }}" --features reference-task -- serve
+
 test:
-    TEST_DATABASE_URL="${TEST_DATABASE_URL:-mysql://app:app@127.0.0.1:3306/app}" cargo test --workspace --all-features --locked
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export TEST_DATABASE_URL="${TEST_DATABASE_URL:-mysql://app:app@127.0.0.1:3306/app}"
+    cargo test --workspace --no-default-features --locked
+    cargo test --workspace --all-features --locked
 
 architecture:
     #!/usr/bin/env bash
@@ -65,7 +75,7 @@ architecture:
 
 check: _check
 
-ci: _check _accept
+ci: _check _accept lifecycle
 
 verify:
     #!/usr/bin/env bash
@@ -82,8 +92,12 @@ verify:
     just ci
 
 _check: architecture
+    bash scripts/check-idiomatic-rust.sh
     cargo fmt --all -- --check
+    cargo check --workspace --all-targets --no-default-features --locked
     cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+    cargo test --workspace --exclude "{{ project-name }}" --no-default-features --locked
+    cargo test -p "{{ project-name }}" --lib --bins --no-default-features --locked
     cargo test --workspace --exclude "{{ project-name }}" --all-features --locked
     cargo test -p "{{ project-name }}" --lib --bins --all-features --locked
 
@@ -108,8 +122,26 @@ _accept:
       rm -f "$policy_log" "$server_log"
     }
     trap cleanup EXIT
-    cargo test -p "{{ project-name }}" --test create_task --all-features --locked
-    cargo run -p "{{ project-name }}" --example task-policy-stub >"$policy_log" 2>&1 &
+
+    # Prove the default production host has no reference Task API or TaskPolicy dependency.
+    cargo run -p "{{ project-name }}" -- serve >"$server_log" 2>&1 &
+    server_pid=$!
+    for _ in {1..60}; do
+      live_status=$(curl -sS -o /dev/null -w '%{http_code}' "$http_base/health/live" || true)
+      [[ "$live_status" == 200 ]] && break
+      kill -0 "$server_pid" 2>/dev/null || { cat "$server_log"; exit 1; }
+      sleep 0.5
+    done
+    [[ "$(curl -sS -o /dev/null -w '%{http_code}' "$http_base/health/live")" == 200 ]]
+    [[ "$(curl -sS -o /dev/null -w '%{http_code}' "$http_base/health/ready")" == 200 ]]
+    [[ "$(curl -sS -o /dev/null -w '%{http_code}' "$http_base/api/v1/tasks/example")" == 404 ]]
+    kill -TERM "$server_pid"
+    wait "$server_pid"
+    server_pid=
+
+    # Prove the opt-in reference slice end to end.
+    cargo test -p "{{ project-name }}" --test create_task --features reference-task --locked
+    cargo run -p "{{ project-name }}" --features reference-task --example task-policy-stub >"$policy_log" 2>&1 &
     policy_pid=$!
     for _ in {1..60}; do
       curl -sS -o /dev/null http://127.0.0.1:4001/health/live && break
@@ -117,9 +149,9 @@ _accept:
       sleep 0.5
     done
     curl -sS -o /dev/null http://127.0.0.1:4001/check
-    cargo run -p "{{ project-name }}" -- migrate
+    cargo run -p "{{ project-name }}" --features reference-task -- migrate
     SQLX_OFFLINE=false DATABASE_URL="$MIGRATION_DATABASE_URL" cargo sqlx prepare --check --workspace -- --all-targets --all-features
-    cargo run -p "{{ project-name }}" -- serve >"$server_log" 2>&1 &
+    cargo run -p "{{ project-name }}" --features reference-task -- serve >"$server_log" 2>&1 &
     server_pid=$!
     for _ in {1..60}; do
       live_status=$(curl -sS -o /dev/null -w '%{http_code}' "$http_base/health/live" || true)
@@ -143,7 +175,6 @@ _accept:
     policy_pid=
     grep -Fq 'traceparent_present=true' "$policy_log"
 
-
 lifecycle:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -155,7 +186,7 @@ lifecycle:
     export TRACE_EXPORTER=none
     target_dir=$(cargo metadata --no-deps --format-version 1 | sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')
     [[ -n "$target_dir" ]]
-    cargo build -p "{{ project-name }}" --bin "{{ project-name }}" --example task-policy-stub --locked
+    cargo build -p "{{ project-name }}" --features reference-task --bin "{{ project-name }}" --example task-policy-stub --locked
     policy_bin="$target_dir/debug/examples/task-policy-stub"
     server_bin="$target_dir/debug/{{ project-name }}"
     [[ -x "$policy_bin" && -x "$server_bin" ]]

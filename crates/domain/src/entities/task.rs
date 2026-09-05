@@ -1,6 +1,6 @@
 use crate::{
     AssigneeId, TaskDescription, TaskEstimateMinutes, TaskId, TaskPriority, TaskRevision,
-    TaskStatus, TaskTitle,
+    TaskStatus, TaskTitle, TaskTransitionError,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -63,6 +63,32 @@ impl Task {
         }
     }
 
+    pub fn start(&mut self) -> Result<(), TaskTransitionError> {
+        if self.status != TaskStatus::Pending {
+            return Err(TaskTransitionError::StartRequiresPending);
+        }
+        let revision = self
+            .revision
+            .next()
+            .ok_or(TaskTransitionError::RevisionExhausted)?;
+        self.status = TaskStatus::InProgress;
+        self.revision = revision;
+        Ok(())
+    }
+
+    pub fn complete(&mut self) -> Result<(), TaskTransitionError> {
+        if self.status != TaskStatus::InProgress {
+            return Err(TaskTransitionError::CompleteRequiresInProgress);
+        }
+        let revision = self
+            .revision
+            .next()
+            .ok_or(TaskTransitionError::RevisionExhausted)?;
+        self.status = TaskStatus::Completed;
+        self.revision = revision;
+        Ok(())
+    }
+
     pub fn id(&self) -> TaskId {
         self.id
     }
@@ -113,15 +139,19 @@ impl Task {
 mod tests {
     use super::*;
 
-    #[test]
-    fn creation_establishes_system_owned_state() {
-        let task = Task::create(NewTask {
+    fn task() -> Task {
+        Task::create(NewTask {
             title: "Ship template".parse().unwrap(),
             description: Some("Document every conversion".parse().unwrap()),
             priority: TaskPriority::High,
             assignee_id: None,
             estimate_minutes: Some(90.try_into().unwrap()),
-        });
+        })
+    }
+
+    #[test]
+    fn creation_establishes_system_owned_state() {
+        let task = task();
 
         assert_eq!(task.status(), TaskStatus::Pending);
         assert_eq!(task.revision(), TaskRevision::initial());
@@ -130,15 +160,34 @@ mod tests {
 
     #[test]
     fn reconstitution_preserves_validated_persisted_state() {
-        let created = Task::create(NewTask {
-            title: "Ship template".parse().unwrap(),
-            description: None,
-            priority: TaskPriority::Normal,
-            assignee_id: None,
-            estimate_minutes: None,
-        });
+        let created = task();
         let snapshot = created.clone().into_snapshot();
 
         assert_eq!(Task::reconstitute(snapshot), created);
+    }
+
+    #[test]
+    fn state_transitions_are_named_domain_operations() {
+        let mut task = task();
+
+        task.start().unwrap();
+        assert_eq!(task.status(), TaskStatus::InProgress);
+        assert_eq!(task.revision().get(), 2);
+
+        task.complete().unwrap();
+        assert_eq!(task.status(), TaskStatus::Completed);
+        assert_eq!(task.revision().get(), 3);
+    }
+
+    #[test]
+    fn rejected_transition_does_not_partially_mutate_state() {
+        let mut task = task();
+        let before = task.clone();
+
+        assert_eq!(
+            task.complete(),
+            Err(TaskTransitionError::CompleteRequiresInProgress)
+        );
+        assert_eq!(task, before);
     }
 }

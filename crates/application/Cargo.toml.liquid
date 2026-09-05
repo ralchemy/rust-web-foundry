@@ -3,5 +3,9 @@ name = "{{ project-name }}-application"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+reference-task = ["domain/reference-task"]
+
 [dependencies]
 domain.workspace = true

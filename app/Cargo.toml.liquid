@@ -3,12 +3,27 @@ name = "{{ project-name }}"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+reference-task = [
+    "application/reference-task",
+    "domain/reference-task",
+    "http/reference-task",
+    "infrastructure/reference-task",
+]
+
 [lib]
 name = "app"
 
 [[example]]
 name = "task-policy-stub"
 path = "examples/task_policy_stub.rs"
+required-features = ["reference-task"]
+
+[[test]]
+name = "create_task"
+path = "tests/create_task.rs"
+required-features = ["reference-task"]
 
 [dependencies]
 application.workspace = true
