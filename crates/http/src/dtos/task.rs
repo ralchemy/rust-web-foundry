@@ -11,6 +11,12 @@ pub(crate) struct CreateTaskRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct StartTaskRequest {
+    pub(crate) expected_revision: u64,
+}
+
+#[derive(Debug, Deserialize)]
 pub(crate) struct TaskPath {
     pub(crate) task_id: String,
 }
