@@ -174,7 +174,7 @@ impl TaskStarter for MySqlTaskRepository {
         }
         .in_span(span)
         .await
-        .map_err(|error| {
+        .inspect_err(|error| {
             let category = match error {
                 StartTaskMutationError::NotFound => "task_not_found",
                 StartTaskMutationError::Conflict => "task_revision_conflict",
@@ -183,7 +183,6 @@ impl TaskStarter for MySqlTaskRepository {
                 StartTaskMutationError::CorruptRecord => "task_record_corrupt",
             };
             mark_database_error(category);
-            error
         })
     }
 }
