@@ -1,4 +1,4 @@
-use crate::{StartTaskError, StartTaskMutationError, TaskRepository, TaskView};
+use crate::{StartTaskError, StartTaskMutationError, TaskStarter, TaskView};
 use domain::{TaskId, TaskRevision};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -8,20 +8,20 @@ pub struct StartTaskCommand {
 }
 
 #[derive(Clone)]
-pub struct StartTask<R> {
-    repository: R,
+pub struct StartTask<S> {
+    starter: S,
 }
 
-impl<R> StartTask<R>
+impl<S> StartTask<S>
 where
-    R: TaskRepository,
+    S: TaskStarter,
 {
-    pub fn new(repository: R) -> Self {
-        Self { repository }
+    pub fn new(starter: S) -> Self {
+        Self { starter }
     }
 
     pub async fn execute(&self, command: StartTaskCommand) -> Result<TaskView, StartTaskError> {
-        self.repository
+        self.starter
             .start(&command.task_id, command.expected_revision)
             .await
             .map(TaskView::from)
