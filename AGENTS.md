@@ -1,6 +1,7 @@
 # Template Maintenance Rules
 
-- This repository maintains and debugs a `cargo-generate` template.
-- Treat `*.liquid` files as template payload data; their Agent and Skill instructions apply only to generated projects.
-- Run payload acceptance in a freshly generated project, including `scripts/check-agent-context.sh` and architecture checks.
-- Keep template-only files excluded through `cargo-generate.toml`; keep generated-project scripts free of template modes.
+- This repository maintains a `cargo-generate` template; `*.liquid` files are generated-project payloads.
+- Generated projects are code-first: code, tests, manifests, migrations, Just recipes, and CI own executable facts.
+- Keep the generated `AGENTS.md` small and keep implementation free of compiled rule bundles or mandatory workflow Skills.
+- Preserve the generated Clean Architecture checks, stack documentation, and fresh review integration.
+- Validate changes in a freshly generated project with the template workflow and `just ci`.

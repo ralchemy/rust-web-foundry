@@ -4,7 +4,4 @@
 .scratch
 CONTEXT.md
 docs/adr/
-docs/agents/*
-!docs/agents/domain.md
-!docs/agents/context-routes.tsv
-!docs/agents/routed-context-budgets.tsv
+docs/agents/

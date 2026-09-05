@@ -1,36 +1,32 @@
 # Architecture
 
-The workspace uses Clean Architecture's dependency rule: source code points toward business policy, while runtime control may cross adapters through application-owned Ports.
+The workspace follows Clean Architecture's dependency rule: source dependencies point toward business policy, while runtime calls cross external boundaries through Application-owned Ports.
 
 ```mermaid
 flowchart LR
     HTTP["http<br/>inbound adapter"] --> APP["application<br/>use cases and Ports"]
     INFRA["infrastructure<br/>outbound adapters"] --> APP
-    APP --> DOMAIN["domain<br/>entities and invariants"]
+    APP --> DOMAIN["domain<br/>business types and invariants"]
     HOST["app<br/>composition and lifecycle"] --> HTTP
     HOST --> INFRA
     HOST --> APP
     HOST --> DOMAIN
 ```
 
-`http` and `infrastructure` are siblings. An Axum handler may invoke a use case that calls a MySQL repository at runtime, but the HTTP crate sees only the `TaskRepository` Port. The `app` crate is the only place that imports and connects both adapters.
+`http` and `infrastructure` are sibling adapters. HTTP may invoke a use case that reaches MySQL at runtime, but it sees only an Application Port. `app` is the only crate that imports and connects both adapters.
 
-The compile-time graph and runtime call direction are different views of the same system. Source dependencies continue pointing inward while an application use case calls outward through a Port it owns. The outer adapter implements that capability without becoming visible to the use case or HTTP adapter.
-
-The executable host lives at root `app/`, beside `crates/`, because it owns the process boundary rather than an architectural layer. A generated service should introduce `apps/` only when it gains a second real executable host.
-
-| Crate | Owns | Does not own |
+| Crate | Owns | Must not own |
 |---|---|---|
-| `domain` | Task, Task ID, Task Title, invariants | I/O, Ports, serialization |
-| `application` | CreateTask, Ports, stable failure categories | HTTP status, SQLx/reqwest details |
-| `http` | Router, DTOs, extractors, public errors, inbound spans | concrete repositories or clients |
-| `infrastructure` | MySQL, migrations, reqwest TaskPolicy | routes or business orchestration |
-| `app` | settings, wiring, commands, Logforth/fastrace, lifecycle | handlers, SQL, domain rules |
+| `domain` | business types, entities, invariants, pure behavior | I/O, Ports, serialization, framework types |
+| `application` | use cases, Ports, stable workflow and dependency failure categories | HTTP status, SQLx/reqwest details, process configuration |
+| `http` | Router, request/response DTOs, extractors, middleware, public errors | concrete repositories/clients or business decisions |
+| `infrastructure` | MySQL, migrations, downstream HTTP and concrete failure classification | routes or business orchestration |
+| `app` | commands, settings, concrete wiring, telemetry setup and lifecycle | handlers, SQL, Domain rules |
 
-There is no `utils`, `common`, or `shared` layer. Put a shared business concept in its innermost owner, express external behavior as an application Port, and keep conversions at adapter boundaries. Depending on the same small crate from multiple layers is preferable to inventing a wrapper. Add a shared capability crate only after several real callers reveal one stable responsibility.
+Cargo manifests and `just architecture` mechanically protect the crate graph and forbid outer framework dependencies in inner crates. Fresh review checks semantic ownership that dependency analysis cannot prove: thin handlers, Application-owned Ports, adapter-private representations, Domain-owned invariants, and one real composition path.
 
-Cargo manifests mechanically enforce the crate graph. Root and crate-local `AGENTS.md` files cover placement and data-boundary rules that Cargo cannot express.
+The root `AGENTS.md` contains only this responsibility map, trust boundaries, stack authority and verification expectations. The production code and tests are the primary examples; read the Guide only for a concrete unanswered design question.
 
-See [Project structure](project-structure.md) for the fixed workspace layout and file-placement guidance.
-See [Ports and adapters](ports-and-adapters.md) for Port ownership, Domain Service boundaries, static dispatch, and the optional dynamic-dispatch path.
-See [Error handling](error-handling.md) for typed failure ownership, cross-layer conversion, public responses, and safe operational recording.
+There is no `utils`, `common`, or `shared` architecture layer. Put a business concept in its innermost owner, express required external behavior as an Application Port, and keep representation conversion in the adapter that owns the representation.
+
+See [Project structure](project-structure.md), [Ports and adapters](ports-and-adapters.md), and [Error handling](error-handling.md).

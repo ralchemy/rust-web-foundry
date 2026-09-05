@@ -1,4 +1,0 @@
-interface:
-  display_name: "Design Domain Boundaries"
-  short_description: "Define capabilities, contexts, and semantic ownership"
-  default_prompt: "Use $ddd-strategic-design to define the domain boundaries for this change."

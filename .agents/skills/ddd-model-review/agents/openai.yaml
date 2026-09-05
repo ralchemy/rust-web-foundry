@@ -1,4 +1,0 @@
-interface:
-  display_name: "Review Domain Model"
-  short_description: "Review domain language, boundaries, and invariants"
-  default_prompt: "Use $ddd-model-review to assess whether this domain model is ready to implement."

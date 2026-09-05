@@ -1,22 +1,20 @@
 # rust-web-foundry
 
-A `cargo-generate` template for building production-oriented Rust web services with explicit Clean Architecture boundaries.
+A `cargo-generate` template for production-oriented Rust web services with explicit Clean Architecture boundaries.
 
-The repository is an independent template project. It generates a runnable five-package Axum workspace with a canonical Task reference slice, MySQL persistence, an outbound TaskPolicy integration, health endpoints, observability, graceful shutdown, tests, and reproducible quality commands.
-
-> **Positioning:** rust-web-foundry is currently a runnable reference-service template. The Task slice is included by default to make the architecture executable and verifiable; it is not intended to define a universal task-management domain model.
+The repository generates a runnable five-package Axum workspace with a canonical Task reference slice, MySQL persistence, an outbound TaskPolicy integration, health endpoints, observability, graceful shutdown, tests, and reproducible quality commands. The Task slice makes the architecture executable; it is not a universal task-management domain model.
 
 ## What it generates
 
 ```text
 app/                         # executable host and composition root
 ├── src/                     # commands, configuration, wiring, lifecycle
-├── examples/                # local external-service stubs
+├── examples/                # local external-service peers
 └── tests/                   # production-path acceptance tests
 crates/
-├── domain/                  # entities, value objects, invariants
-├── application/             # use cases, Ports, application errors
-├── http/                    # Axum routes, DTOs, extractors, API errors
+├── domain/                  # business types, entities, invariants
+├── application/             # use cases, Ports, stable application errors
+├── http/                    # Axum routes, DTOs, middleware, public errors
 └── infrastructure/          # SQLx/MySQL and reqwest adapters
 ```
 
@@ -25,61 +23,86 @@ Dependencies point inward:
 ```text
 http ────────────┐
                  ├──> application ───> domain
-infrastructure ─┘
+infrastructure ──┘
 
 app ──> http + infrastructure + application + domain
 ```
 
-The generated Task golden path includes `POST /api/v1/tasks` and `GET /api/v1/tasks/{task_id}`. It demonstrates independent HTTP DTOs, Application commands and views, validated Domain value objects, private MySQL rows, private downstream wire types, `FromStr`/`TryFrom`/`From` conversions, checked SQLx queries, and reconstruction of untrusted persisted values through Domain invariants.
+The generated Task path includes `POST /api/v1/tasks` and `GET /api/v1/tasks/{task_id}`. It demonstrates independent wire, Application, Domain, and database types; explicit boundary conversion; checked SQLx queries; private adapter models; stable public errors; real composition tests; and process lifecycle behavior.
 
 ## Generate a service
 
 Prerequisites:
 
-- Rustup and a stable Rust toolchain
+- Rustup and stable Rust
 - Docker with Compose v2
-- [`cargo-generate`](https://github.com/cargo-generate/cargo-generate) `0.23.x`
-- [`just`](https://github.com/casey/just) `1.58.x`
-- [`sqlx-cli`](https://github.com/launchbadge/sqlx) `0.9.x` for SQLx verification
-
-Install the template tools:
+- `cargo-generate` 0.23.x
+- `just` 1.58.x
+- `sqlx-cli` 0.9.x for SQLx verification
 
 ```sh
 cargo install cargo-generate --version 0.23.14 --locked
 cargo install just --version 1.58.0 --locked
 cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features rustls,mysql
-```
 
-Generate and verify a service:
-
-```sh
 cargo generate --path . --name my-service
 cd my-service
 just verify
 ```
 
-`just verify` starts MySQL with Docker Compose and runs the generated project's formatting, Clippy, tests, migration, SQLx metadata verification, live HTTP smoke checks, and trace propagation checks. The dedicated `just lifecycle` command exercises in-flight request draining and shutdown-timeout behavior.
+`just verify` starts MySQL, runs the generated checks and tests, applies migrations explicitly, verifies SQLx metadata, drives the production server path, checks trace propagation, and proves graceful shutdown.
+
+## Code-first development
+
+Generated projects use a small root contract rather than preloading a compiled documentation bundle or implementation workflow. Feature work starts from:
+
+1. the requested behavior;
+2. the nearest complete production path and its tests;
+3. Cargo manifests, migrations, Just recipes, and CI;
+4. a focused failing test at the owning public seam.
+
+The Guide remains available as cold documentation for concrete design questions and capabilities with no existing example. It is not automatically routed into ordinary implementation context.
+
+## Rust review
+
+Generated projects pin [`leonardomso/rust-skills`](https://github.com/leonardomso/rust-skills) to an exact commit for explicit, fresh review. The generic Rust rules are not copied into `AGENTS.md` and are not loaded during implementation.
+
+The review keeps three axes separate:
+
+- requested behavior and acceptance evidence;
+- project Clean Architecture and selected stack;
+- applicable Rust quality rules from the pinned Skill.
+
+Project-specific overrides prevent generic advice from replacing the fastrace/Logforth telemetry stack, typed inner errors, inline test fakes, layered crate structure, or other installed choices without a concrete requirement.
+
+```sh
+bash scripts/install-rust-skills.sh
+```
+
+Then invoke `.agents/skills/review-rust-web/SKILL.md` in a fresh review session with the request and complete diff.
 
 ## Local commands
-
-Run these commands from a generated project:
 
 | Command | Purpose |
 |---|---|
 | `just infra-up` | Start local MySQL |
 | `just infra-down` | Stop local MySQL |
-| `just policy-stub` | Start the local TaskPolicy stub |
+| `just policy-stub` | Start the local TaskPolicy peer |
 | `just migrate` | Apply embedded migrations explicitly |
 | `just sqlx-prepare` | Apply development migrations and refresh `.sqlx` metadata |
 | `just serve` | Start the production server path |
 | `just test` | Run the workspace tests against MySQL |
-| `just architecture` | Check workspace dependency direction and inner-crate framework boundaries |
+| `just architecture` | Check dependency direction, inner-crate boundaries, and the small project/review contract |
 | `just check` | Run architecture checks, formatting, Clippy, and database-free tests |
-| `just ci` | Run checks and database-backed acceptance steps against existing services |
-| `just verify` | Start dependencies and run the complete standard verification path |
+| `just ci` | Run checks and database-backed acceptance against existing services |
+| `just verify` | Start dependencies and run the complete verification path |
 | `just lifecycle` | Prove graceful drain and shutdown-timeout behavior |
 
-The server does not run migrations automatically. Use the dedicated `migrate` command with migration credentials before starting `serve`.
+The server never runs migrations automatically. Run the dedicated `migrate` command with schema credentials before starting `serve`.
+
+## Selected stack
+
+The generated manifests are the exact dependency authority. The reference service currently uses Axum/Tower, Tokio, SQLx with MySQL, Reqwest, Serde, validator/axum-valid, config/dotenvy/secrecy, fastrace/Logforth/OpenTelemetry, thiserror/anyhow, Chrono, and ULID. Generic Skill recommendations do not silently add parallel frameworks or replace these integrations.
 
 ## Documentation
 
@@ -87,65 +110,20 @@ The server does not run migrations automatically. Use the dedicated `migrate` co
 - [Generated-service README template](README.md.liquid)
 - [Guide](docs/guide/README.md)
 - [Architecture](docs/guide/architecture/README.md)
+- [Selected stack](docs/guide/stack.md)
 - [Task golden path](docs/guide/task-flow.md)
-- [Idiomatic Rust code contract](docs/guide/reference/idiomatic-rust.md)
 - [Testing and quality gates](docs/guide/testing.md)
-- [Observability](docs/guide/observability.md)
-- [Outbound HTTP](docs/guide/reference/outbound-http.md)
-- [Project Rules](AGENTS.md)
+- [Code-first development](docs/guide/development.md)
+- [Fresh Rust review](docs/guide/reviewing.md)
 
 ## Referenced projects and attribution
 
-This template is an independent implementation. The following projects are referenced because they provide either the template-generation toolchain, runtime libraries, or design material. They are not bundled copies of one another.
+The primary design reference is [`gruberb/bulletproof-rust-web`](https://github.com/gruberb/bulletproof-rust-web) and its published guide. This repository is an independent `cargo-generate` template inspired by selected architectural material from that project; it is not a fork or drop-in mirror.
 
-### Primary design reference: Bulletproof Rust Web
+[`leonardomso/rust-skills`](https://github.com/leonardomso/rust-skills) is an MIT-licensed, pinned review dependency. Its generic Rust guidance is applied only after this project's behavior, architecture, manifests, executable evidence, and override file.
 
-The most important upstream reference is [`gruberb/bulletproof-rust-web`](https://github.com/gruberb/bulletproof-rust-web), whose published guide is available at <https://gruberb.github.io/bulletproof-rust-web/>.
-
-That repository is the **source of the original Bulletproof Rust Web guide and architectural subject matter** that informed this project. In particular, this project draws on its discussion of:
-
-- Clean Architecture and dependency direction;
-- Rust workspace and crate structure;
-- domain modeling and validation;
-- application Ports and adapters;
-- Axum routing and thin handlers;
-- error handling and public API contracts;
-- SQLx/MySQL persistence;
-- configuration and secret handling;
-- testing, observability, graceful shutdown, and outbound I/O;
-- AI-agent Project Rules, Skills, and development guidance.
-
-`rust-web-foundry` is **not the upstream repository, not a fork, and not a drop-in mirror**. It is a separately designed `cargo-generate` template that reorganizes and operationalizes selected ideas from that guide into a generated five-package workspace. The generated code, Guide structure, Project Rules, Skills, validation harness, dependency choices, and runtime contracts in this repository should be treated as this project's own implementation and may intentionally differ from the upstream guide.
-
-The historical name **Bulletproof Rust Web** is retained only in validation and migration records where it identifies the upstream source material or an earlier working name. The current product name is **rust-web-foundry**.
-
-### Tooling and runtime dependencies
-
-| Project | Role in rust-web-foundry | Link |
-|---|---|---|
-| [`cargo-generate`](https://github.com/cargo-generate/cargo-generate) | Renders this repository into a new project | [Documentation](https://cargo-generate.github.io/cargo-generate/) |
-| [`Axum`](https://github.com/tokio-rs/axum) | HTTP server and routing | [Documentation](https://docs.rs/axum/) |
-| [`Tokio`](https://github.com/tokio-rs/tokio) | Async runtime and process signals | [Documentation](https://docs.rs/tokio/) |
-| [`SQLx`](https://github.com/launchbadge/sqlx) | MySQL pool, migrations, and SQL integration | [Documentation](https://docs.rs/sqlx/) |
-| [`reqwest`](https://github.com/sean-monstar/reqwest) | Outbound TaskPolicy HTTP client | [Documentation](https://docs.rs/reqwest/) |
-| [`fastrace`](https://github.com/fastn-stack/fastrace) | Trace spans and W3C trace context propagation | [Documentation](https://docs.rs/fastrace/) |
-| [`fastrace-axum`](https://crates.io/crates/fastrace-axum) | Axum request trace integration | [Documentation](https://docs.rs/fastrace-axum/) |
-| [`fastrace-reqwest`](https://crates.io/crates/fastrace-reqwest) | Outbound reqwest trace propagation | [Documentation](https://docs.rs/fastrace-reqwest/) |
-| [`Logforth`](https://github.com/fastn-stack/logforth) | Structured process logging through the `log` facade | [Documentation](https://docs.rs/logforth/) |
-| [`config`](https://github.com/mehcode/config-rs) | Environment-backed configuration loading | [Documentation](https://docs.rs/config/) |
-| [`secrecy`](https://github.com/iqlusioninc/crates/tree/master/secrecy) | Secret-string handling for configuration | [Documentation](https://docs.rs/secrecy/) |
-| [`just`](https://github.com/casey/just) | Reproducible developer and acceptance commands | [Documentation](https://just.systems/man/en/) |
-
-### Additional design reference
-
-[`tyrchen/rust-lib-template`](https://github.com/tyrchen/rust-lib-template) was consulted separately as a **read-only reference for template ergonomics and automation**. It is not the source of the Bulletproof Rust Web guide, and rust-web-foundry is not a fork, copy, or modification of it.
-
-## Validation status
-
-Fresh generated projects are validated for template rendering, workspace compilation, formatting, Clippy, MySQL migrations, SQLx verification, type-safe create and lookup behavior, downstream policy conversion, trace propagation, and process lifecycle behavior when the documented Docker/MySQL environment is available.
-
-Database-backed checks require explicit `DATABASE_URL`, `MIGRATION_DATABASE_URL`, and `TEST_DATABASE_URL` values. AI/context findings in the validation material are limited to the tested model, prompts, repository state, and context protocol.
+[`tyrchen/rust-lib-template`](https://github.com/tyrchen/rust-lib-template) was consulted separately for template ergonomics and automation.
 
 ## License
 
-No license is declared by this repository yet. Add a `LICENSE` file and update this section before publishing or redistributing the template.
+No project license is declared yet. Add a `LICENSE` file before publishing or redistributing this template. Third-party projects retain their own licenses.
