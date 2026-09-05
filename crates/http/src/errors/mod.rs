@@ -1,121 +1,57 @@
 use crate::dtos::ErrorEnvelope;
-use application::{CreateTaskError, GetTaskError};
-use axum::{
-    Json,
-    extract::rejection::JsonRejection,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
+use application::{CreateTaskError, GetTaskError, StartTaskError};
+use axum::{Json, extract::rejection::JsonRejection, http::StatusCode, response::{IntoResponse, Response}};
 
 pub(crate) enum ApiError {
-    NotFound,
-    MethodNotAllowed,
-    InvalidRequest,
-    UnsupportedMediaType,
-    RequestTooLarge,
-    TaskInputInvalid,
-    TaskIdInvalid,
-    TaskNotFound,
-    TaskPolicyRejected,
-    TaskPolicyBadResponse,
-    TaskPolicyUnavailable,
-    Internal,
+    NotFound, MethodNotAllowed, InvalidRequest, UnsupportedMediaType, RequestTooLarge,
+    TaskInputInvalid, TaskIdInvalid, TaskNotFound, TaskConflict, TaskTransitionRejected,
+    TaskPolicyRejected, TaskPolicyBadResponse, TaskPolicyUnavailable, Internal,
 }
 
 impl From<CreateTaskError> for ApiError {
-    fn from(error: CreateTaskError) -> Self {
-        match error {
-            CreateTaskError::PolicyRejected => Self::TaskPolicyRejected,
-            CreateTaskError::PolicyUnavailable => Self::TaskPolicyUnavailable,
-            CreateTaskError::PolicyBadResponse => Self::TaskPolicyBadResponse,
-            CreateTaskError::Persistence => Self::Internal,
-        }
-    }
+    fn from(error: CreateTaskError) -> Self { match error {
+        CreateTaskError::PolicyRejected => Self::TaskPolicyRejected,
+        CreateTaskError::PolicyUnavailable => Self::TaskPolicyUnavailable,
+        CreateTaskError::PolicyBadResponse => Self::TaskPolicyBadResponse,
+        CreateTaskError::Persistence => Self::Internal,
+    }}
 }
-
-impl From<GetTaskError> for ApiError {
-    fn from(_: GetTaskError) -> Self {
-        Self::Internal
-    }
+impl From<GetTaskError> for ApiError { fn from(_: GetTaskError) -> Self { Self::Internal } }
+impl From<StartTaskError> for ApiError {
+    fn from(error: StartTaskError) -> Self { match error {
+        StartTaskError::NotFound => Self::TaskNotFound,
+        StartTaskError::Conflict => Self::TaskConflict,
+        StartTaskError::Rejected(_) => Self::TaskTransitionRejected,
+        StartTaskError::Persistence => Self::Internal,
+    }}
 }
-
 impl From<JsonRejection> for ApiError {
-    fn from(rejection: JsonRejection) -> Self {
-        match rejection.status() {
-            StatusCode::UNSUPPORTED_MEDIA_TYPE => Self::UnsupportedMediaType,
-            StatusCode::PAYLOAD_TOO_LARGE => Self::RequestTooLarge,
-            _ => Self::InvalidRequest,
-        }
-    }
+    fn from(rejection: JsonRejection) -> Self { match rejection.status() {
+        StatusCode::UNSUPPORTED_MEDIA_TYPE => Self::UnsupportedMediaType,
+        StatusCode::PAYLOAD_TOO_LARGE => Self::RequestTooLarge,
+        _ => Self::InvalidRequest,
+    }}
 }
 
 impl ApiError {
     fn response(&self) -> (StatusCode, ErrorEnvelope) {
         let (status, code, message) = match self {
             Self::NotFound => (StatusCode::NOT_FOUND, "not_found", "route not found"),
-            Self::MethodNotAllowed => (
-                StatusCode::METHOD_NOT_ALLOWED,
-                "method_not_allowed",
-                "method not allowed",
-            ),
-            Self::InvalidRequest => (
-                StatusCode::BAD_REQUEST,
-                "invalid_request",
-                "request is invalid",
-            ),
-            Self::UnsupportedMediaType => (
-                StatusCode::UNSUPPORTED_MEDIA_TYPE,
-                "unsupported_media_type",
-                "content type must be application/json",
-            ),
-            Self::RequestTooLarge => (
-                StatusCode::PAYLOAD_TOO_LARGE,
-                "request_too_large",
-                "request body is too large",
-            ),
-            Self::TaskInputInvalid => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "task_input_invalid",
-                "task input is invalid",
-            ),
-            Self::TaskIdInvalid => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "task_id_invalid",
-                "task id is invalid",
-            ),
-            Self::TaskNotFound => (
-                StatusCode::NOT_FOUND,
-                "task_not_found",
-                "task was not found",
-            ),
-            Self::TaskPolicyRejected => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "task_policy_rejected",
-                "task policy rejected the task",
-            ),
-            Self::TaskPolicyBadResponse => (
-                StatusCode::BAD_GATEWAY,
-                "task_policy_bad_response",
-                "task policy returned an invalid response",
-            ),
-            Self::TaskPolicyUnavailable => (
-                StatusCode::SERVICE_UNAVAILABLE,
-                "task_policy_unavailable",
-                "task policy is unavailable",
-            ),
-            Self::Internal => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal_error",
-                "internal server error",
-            ),
+            Self::MethodNotAllowed => (StatusCode::METHOD_NOT_ALLOWED, "method_not_allowed", "method not allowed"),
+            Self::InvalidRequest => (StatusCode::BAD_REQUEST, "invalid_request", "request is invalid"),
+            Self::UnsupportedMediaType => (StatusCode::UNSUPPORTED_MEDIA_TYPE, "unsupported_media_type", "content type must be application/json"),
+            Self::RequestTooLarge => (StatusCode::PAYLOAD_TOO_LARGE, "request_too_large", "request body is too large"),
+            Self::TaskInputInvalid => (StatusCode::UNPROCESSABLE_ENTITY, "task_input_invalid", "task input is invalid"),
+            Self::TaskIdInvalid => (StatusCode::UNPROCESSABLE_ENTITY, "task_id_invalid", "task id is invalid"),
+            Self::TaskNotFound => (StatusCode::NOT_FOUND, "task_not_found", "task was not found"),
+            Self::TaskConflict => (StatusCode::CONFLICT, "task_revision_conflict", "task revision is stale"),
+            Self::TaskTransitionRejected => (StatusCode::UNPROCESSABLE_ENTITY, "task_transition_rejected", "task transition is not allowed"),
+            Self::TaskPolicyRejected => (StatusCode::UNPROCESSABLE_ENTITY, "task_policy_rejected", "task policy rejected the task"),
+            Self::TaskPolicyBadResponse => (StatusCode::BAD_GATEWAY, "task_policy_bad_response", "task policy returned an invalid response"),
+            Self::TaskPolicyUnavailable => (StatusCode::SERVICE_UNAVAILABLE, "task_policy_unavailable", "task policy is unavailable"),
+            Self::Internal => (StatusCode::INTERNAL_SERVER_ERROR, "internal_error", "internal server error"),
         };
         (status, ErrorEnvelope::new(code, message))
     }
 }
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let (status, body) = self.response();
-        (status, Json(body)).into_response()
-    }
-}
+impl IntoResponse for ApiError { fn into_response(self) -> Response { let (status, body) = self.response(); (status, Json(body)).into_response() } }
