@@ -5,9 +5,9 @@ mod settings;
 
 #[cfg(feature = "reference-task")]
 use application::{CreateTask, GetTask, StartTask};
+use infrastructure::MySqlReadinessProbe;
 #[cfg(feature = "reference-task")]
 use infrastructure::{HttpTaskPolicy, MySqlTaskRepository};
-use infrastructure::MySqlReadinessProbe;
 use secrecy::{ExposeSecret, SecretString};
 use sqlx::MySqlPool;
 use std::{error::Error, io, time::Duration};
