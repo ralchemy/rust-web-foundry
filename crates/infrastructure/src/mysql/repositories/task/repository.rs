@@ -1,5 +1,5 @@
 use super::row::TaskRow;
-use application::{StartTaskMutationError, TaskRepository, TaskRepositoryError};
+use application::{StartTaskMutationError, TaskRepository, TaskRepositoryError, TaskStarter};
 use domain::{Task, TaskId, TaskRevision};
 use fastrace::{future::FutureExt, local::LocalSpan, prelude::Span};
 use sqlx::MySqlPool;
@@ -38,7 +38,9 @@ impl TaskRepository for MySqlTaskRepository {
             .fetch_optional(&self.pool).await.map_err(|_| TaskRepositoryError::Unavailable)?;
         row.map(Task::try_from).transpose().map_err(|_| TaskRepositoryError::CorruptRecord)
     }
+}
 
+impl TaskStarter for MySqlTaskRepository {
     async fn start(&self, task_id: &TaskId, expected_revision: TaskRevision) -> Result<Task, StartTaskMutationError> {
         let span = Span::enter_with_local_parent("mysql.task.start");
         async {
