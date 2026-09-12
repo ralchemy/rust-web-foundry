@@ -5,11 +5,11 @@
 Generated services start from a small project contract and executable repository evidence rather than a preloaded documentation bundle or implementation workflow Skill.
 
 1. Read enough source and tests to trace the affected public path.
-2. Separate current executable facts from intended behavior. Requested behavior and explicitly confirmed decisions own new business and public-API semantics. If a material rule is absent, leave it unresolved instead of copying a reference-domain rule or inventing a default.
+2. Separate current executable facts from intended behavior. Requested behavior and explicitly confirmed decisions own new business and public-API semantics. If a material rule is absent, leave only the dependent behavior unresolved instead of copying a reference-domain rule or inventing a default; continue independent work that does not need that decision.
 3. When a change introduces a new lifecycle, invariant, authorization decision, consistency boundary, or meaning for an existing term, record the smallest design decision needed before production edits. Ordinary changes inside an established model do not need a repeated DDD ceremony.
-4. Add the smallest failing test at the owner that can prove the behavior.
+4. For behavior changes, add or update the smallest proof at the owner that can distinguish the intended behavior from a plausible wrong implementation. A documentation-only, mechanical, or already-covered change does not need a ceremonial new failing test.
 5. Implement one coherent buildable slice, following the existing layer and conversion patterns unless the requirement establishes a new responsibility.
-6. Run the focused test, then `just check`; add `just verify` for SQLx metadata, migrations, installed routes/composition, configuration, or runtime behavior.
+6. Run focused evidence while editing. Finish with `just check`, or with `just verify` instead for SQLx metadata, migrations, installed routes/composition, configuration, or runtime behavior; `just verify` already includes the check gate.
 
 Code, tests, manifests, migrations, Just recipes, and CI own current executable facts. The Guide explains the current design and conditional alternatives, but ordinary work reads a chapter only when a concrete question is not answered by the production path.
 
@@ -27,11 +27,15 @@ The root manifest and lockfile are the exact dependency catalogue. Use workspace
 
 ## Checks
 
-Use the smallest public check that proves the current change. `just check` validates both the default feature set and the full reference configuration without MySQL. `just verify` starts local dependencies and proves the reference production path, SQLx metadata, migrations, trace propagation, and lifecycle behavior. The default service must still build and test without `reference-task` and without TaskPolicy configuration.
+Use the smallest public check that proves the current change. `just check` validates both the default feature set and the full reference configuration without MySQL. `just verify` starts local dependencies, delegates to the full CI/check gate, and proves the reference production path, SQLx metadata, migrations, trace propagation, and lifecycle behavior. The default service must still build and test without `reference-task` and without TaskPolicy configuration.
 
 SQLx query metadata is committed under `.sqlx/`. Reference Task migrations live under `crates/infrastructure/migrations/reference-task/`; the default migration set is intentionally empty of example schema. After changing a reference migration or checked query, run `just sqlx-prepare`.
 
 Generated CI runs the same public gates used locally. Template CI additionally proves the freshly generated default shape; template-default assertions must not prevent a real generated project from later adding its own Skills or local agent instructions.
+
+### Automation safety
+
+Do not infer that a command is safe to repeat merely because it is called a test or verification command. `just check` is database-free. `just verify`, `just ci`, `just test`, migrations, and SQLx preparation can touch the database URLs supplied by the environment and may use persistent local Compose state. Before autonomously repeating a database-backed command, confirm from the effective command/environment that it targets the intended disposable or explicitly approved development resources. If that cannot be established, run the database-free evidence and report the remaining verification instead of redirecting credentials or destructive cleanup by guesswork.
 
 ## Review
 
