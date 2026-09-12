@@ -11,23 +11,27 @@ bash scripts/install-rust-skills.sh
 bash scripts/install-rust-skills.sh --check
 ```
 
-The checkout is installed under ignored `.scratch/rust-skills` at the commit recorded in `.agents/rust-skills.lock`. The project does not copy the 37 KB rule index into `AGENTS.md`, and normal implementation sessions do not load it.
+The checkout is installed under ignored `.scratch/rust-skills` at the commit recorded in `.agents/rust-skills.lock`. The project does not copy the generic rule index into `AGENTS.md`, and normal implementation sessions do not load it.
 
 ## Run the project review Skill
 
-Invoke `.agents/skills/review-rust-web/SKILL.md` explicitly in a fresh session and provide the request/specification plus the complete branch or working-tree diff. The Skill reviews three separate axes:
+Invoke `.agents/skills/review-rust-web/SKILL.md` explicitly in a fresh session and provide the request/specification plus the complete branch or working-tree diff. OpenAI-compatible hosts also receive `agents/openai.yaml` with implicit invocation disabled.
+
+The Skill reviews three separate axes:
 
 1. behavior and acceptance evidence;
 2. project Clean Architecture, selected stack, persistence/security/lifecycle contracts where changed;
-3. applicable `rust-skills` rules, selected progressively from the pinned index.
+3. applicable `rust-skills` rules, selected progressively from the pinned checkout by diff concern and rule filename.
 
-The requested behavior and acceptance tests override every general convention. Project code, manifests, gates, and `.agents/rust-skills-overrides.md` override generic `rust-skills` recommendations.
+Only requested behavior and explicitly confirmed acceptance criteria own intended behavior. Tests created during implementation are evidence unless the request or a confirmed decision explicitly promotes them to acceptance criteria. Project code, manifests, gates, and `.agents/rust-skills-overrides.md` override generic `rust-skills` recommendations.
 
-A review is incomplete when the diff scope, originating request, pinned rules checkout, or required verification is unavailable. Findings cite a project contract or rust-skills rule ID and distinguish correctness errors from warnings and optional advice.
+A formal review is incomplete when the diff scope, originating request, pinned rules checkout, or required verification is unavailable. Missing evidence blocks only conclusions that depend on it: complete independent review axes when enough evidence exists, state exactly what remains unverified, and never substitute another generic ruleset for the pinned baseline.
 
 ## Verification
 
-Run the smallest owning test and `just check`. Run `just verify` when a change affects SQLx metadata, migrations, installed routes or production composition, configuration, or runtime/lifecycle behavior. Keep complete successful logs outside the review prompt; include the command, result, and only the smallest useful failure excerpt.
+Run the smallest owning test while editing or investigating. Finish with `just check`, or with `just verify` instead when a change affects SQLx metadata, migrations, installed routes or production composition, configuration, or runtime/lifecycle behavior. `just verify` already delegates to the complete check gate; do not require a separate successful `just check` immediately before it unless an earlier fast check is useful for feedback.
+
+Keep complete successful logs outside the review prompt; include the command, result, and only the smallest useful failure excerpt.
 
 ## Updating rust-skills
 
