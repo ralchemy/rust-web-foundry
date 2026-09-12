@@ -6,5 +6,5 @@
 - `Cargo.toml`, `Cargo.lock`, and existing production integrations own the selected stack. Do not add a parallel framework or replace a selected library without a concrete requirement.
 - Parse untrusted values at the boundary that owns their representation; never expose secrets, rejected values, or raw dependency failures.
 - The default service excludes the `reference-task` example. Its code is executable architectural and DDD reference material, not authority for a user's business semantics.
-- Run the smallest affected test and `just check`; run `just verify` for SQLx metadata, migrations, routes or composition, configuration, or runtime behavior.
+- Run the smallest affected test while editing. Finish with `just check`, or with `just verify` instead when SQLx metadata, migrations, routes or composition, configuration, or runtime behavior changed; `just verify` already includes `just check`.
 - The pinned `rust-skills` baseline is review-only. This contract and `.agents/rust-skills-overrides.md` override generic advice.
