@@ -1,6 +1,6 @@
 # Project overrides for rust-skills
 
-Authority order is: the requested behavior and acceptance tests, this project's code/manifests/gates, this file, then the generic `rust-skills` rules.
+Authority order is: requested behavior and explicitly confirmed acceptance criteria, this project's code/manifests/gates, this file, then the generic `rust-skills` rules. Tests created during implementation are evidence unless the request or a confirmed decision explicitly makes them acceptance criteria.
 
 - `proj-mod-by-feature`: group capabilities inside their owning architecture layer; never merge Domain, Application, HTTP, Infrastructure, and `app` responsibilities into one feature module.
 - `proj-prelude-module`: do not add a prelude by default; explicit imports make cross-layer dependencies visible.
