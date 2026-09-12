@@ -21,7 +21,9 @@ do
 done
 
 skill="$repo_root/.agents/skills/review-rust-web/SKILL.md"
+openai_policy="$repo_root/.agents/skills/review-rust-web/agents/openai.yaml"
 [[ -f "$skill" ]] || fail "missing generated review Skill"
+[[ -f "$openai_policy" ]] || fail "missing OpenAI review Skill invocation policy"
 
 for required in \
   .agents/rust-skills.lock \
@@ -34,9 +36,11 @@ do
 done
 
 grep -Fqx 'disable-model-invocation: true' "$skill" \
-  || fail "review Skill must be explicit-only"
-grep -Fq '.scratch/rust-skills/SKILL.md' "$skill" \
-  || fail "review Skill must consume the pinned local rust-skills index"
+  || fail "review Skill must remain explicit-only for compatible hosts"
+grep -Fq 'allow_implicit_invocation: false' "$openai_policy" \
+  || fail "OpenAI review Skill policy must disable implicit invocation"
+grep -Fq '.scratch/rust-skills/rules/' "$skill" \
+  || fail "review Skill must select pinned Rust rules progressively"
 grep -Fq '.agents/rust-skills-overrides.md' "$skill" \
   || fail "review Skill must apply project overrides"
 
@@ -47,15 +51,11 @@ commit=$(sed -nE 's/^commit=([0-9a-f]{40})$/\1/p' "$repo_root/.agents/rust-skill
 grep -Fq "repository=$repository" <<<"$metadata" || fail "installer repository does not match lock"
 grep -Fq "commit=$commit" <<<"$metadata" || fail "installer commit does not match lock"
 
-for file in \
-  "$repo_root/AGENTS.md" \
-  "$repo_root/docs/guide/README.md" \
-  "$repo_root/docs/guide/development.md"
-do
-  if grep -Eiq 'compiled context pack|context-routes|routed-context-budget' "$file"; then
-    fail "legacy implementation orchestration remains in ${file#"$repo_root/"}"
-  fi
-done
+if grep -REiq \
+  'compiled Context Pack|context-routes|routed-context-budget|nearest-local rules|add-endpoint.*review-pr' \
+  "$repo_root/AGENTS.md" "$repo_root/docs/guide"; then
+  fail "legacy agent orchestration language remains in generated guidance"
+fi
 
 version=$(sed -nE 's/^version=([^[:space:]]+)$/\1/p' "$repo_root/.agents/rust-skills.lock")
 printf 'project_contract: code-first rust-skills=%s agents_bytes=%s\n' "$version" "$bytes"
